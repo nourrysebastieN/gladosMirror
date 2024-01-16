@@ -4,4 +4,3 @@ COPY . .
 RUN stack setup
 RUN make
 CMD ["./glados"]
-

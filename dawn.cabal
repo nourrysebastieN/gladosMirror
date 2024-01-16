@@ -9,9 +9,9 @@ version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/dawn#readme>
 homepage:       https://github.com/githubuser/dawn#readme
 bug-reports:    https://github.com/githubuser/dawn/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2023 Author name here
+author:         Agakitsune, nourrysebastienN
+maintainer:     raphael.turpin@epitech.eu, nourry.sebastien@epitech.eu
+copyright:      2023 Agakitsune, nourrysebastienN
 license:        BSD-3-Clause
 license-file:   LICENSE
 build-type:     Simple
@@ -25,21 +25,66 @@ source-repository head
 
 library
   exposed-modules:
-      Lexer
-      Lib
-      Lisp
+      Monoparsec
+      Monoparsec.State
+      Monoparsec.Stream
+      Monoparsec.Token
+      Monoparsec.Message
+      Monoparsec.Debug
+      System.Console.Hawk
+      Instructions
+      Dawn
+      Dusk
+      Twillight
+      Option
   other-modules:
-      Paths_dawn
-  autogen-modules:
-      Paths_dawn
+      Monoparsec.Misc
+      Monoparsec.Message.Item
+      Monoparsec.Message.Range
+      Monoparsec.Message.Reason
+      Monoparsec.Message.Type
+      Monoparsec.Monad
+      Monoparsec.Monad.MonadParsec
+      Monoparsec.Monad.Option
+      Data.Hawk.Any
+      Data.Hawk.Any.Prelude
+      System.Console.Hawk.Annotate
+      System.Console.Hawk.Default
+      System.Console.Hawk.Explicit
+      System.Console.Hawk.Explicit.Complete
+      System.Console.Hawk.Explicit.ExpandArgsAt
+      System.Console.Hawk.Explicit.Help
+      System.Console.Hawk.Explicit.Process
+      System.Console.Hawk.Explicit.SplitJoin
+      System.Console.Hawk.Explicit.Type
+      System.Console.Hawk.Helper
+      System.Console.Hawk.Implicit
+      System.Console.Hawk.Implicit.Extra
+      System.Console.Hawk.Implicit.Global
+      System.Console.Hawk.Implicit.Local
+      System.Console.Hawk.Implicit.Reader
+      System.Console.Hawk.Implicit.Reform
+      System.Console.Hawk.Implicit.Type
+      System.Console.Hawk.Implicit.UI
+      System.Console.Hawk.Text
+      System.Console.Hawk.Verbosity
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      ansi-terminal
+    , base >=4.7 && <5
+    , bytestring
     , containers
+    , directory
+    , filepath
+    , ghc
+    , hashable
     , monadplus
+    , process
     , text
+    , transformers
+    , unordered-containers
   default-language: Haskell2010
 
 executable dawn-exe
@@ -49,20 +94,56 @@ executable dawn-exe
   autogen-modules:
       Paths_dawn
   hs-source-dirs:
-      app
+      dawn-app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      ansi-terminal
+    , base >=4.7 && <5
+    , bytestring
     , containers
     , dawn
+    , directory
+    , filepath
+    , ghc
+    , hashable
     , monadplus
+    , process
     , text
+    , transformers
+    , unordered-containers
+  default-language: Haskell2010
+
+executable dawnc-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_dawn
+  autogen-modules:
+      Paths_dawn
+  hs-source-dirs:
+      dawnc-app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      ansi-terminal
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , dawn
+    , directory
+    , filepath
+    , ghc
+    , hashable
+    , monadplus
+    , process
+    , text
+    , transformers
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite dawn-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      TestInstruction
       Paths_dawn
   autogen-modules:
       Paths_dawn
@@ -70,9 +151,19 @@ test-suite dawn-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      HUnit
+    , ansi-terminal
+    , base >=4.7 && <5
+    , bytestring
     , containers
     , dawn
+    , directory
+    , filepath
+    , ghc
+    , hashable
     , monadplus
+    , process
     , text
+    , transformers
+    , unordered-containers
   default-language: Haskell2010

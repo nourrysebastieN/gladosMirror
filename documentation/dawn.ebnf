@@ -1,0 +1,74 @@
+digit0 = '0' | digit ;
+digit = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' ;
+
+binary = '0' | '1' ;
+octal = binary | '2' | '3' | '4' | '5' | '6' | '7' ;
+hex = digit0 | 'A' | 'a' | 'B' | 'b' | 'C' | 'c' | 'D' | 'd' | 'E' | 'e' | 'F' | 'f' ;
+
+integer = ( ('0x' | '0X'), hex, { hex } )
+        | ( ('0o' | '0O'), octal, { octal } )
+        | ( ('0b' | '0B'), binary, { binary } )
+        | ( [ '-' ] | [ '+' ] ), ( '0' | digit, { digit0 }) ;
+
+boolean = 'true' | 'false' ;
+
+alpha = ? alpha character ? ;
+
+control = '\' ,
+        ( "'" (* simple quote *)
+        | '"' (* quote *)
+        | '\' (* slash *)
+        | '/' (* backslash *)
+        | 'b' (* backspace *)
+        | 'f' (* formfeed *)
+        | 'n' (* linefeed *)
+        | 'r' (* carriage return *)
+        | 't' (* tabulation *)
+        | 'v' (* vertical tabulation *)
+        ) ;
+
+character = "'" , ( ? all charater except \ or control character ? | control ) , "'" ;
+
+uppercase = "'" , ( ? all uppercase alpha ? ), "'" ;
+
+lowercase = "'" , ( ? all lowercase alpha ? ), "'" ;
+
+string = '"' , { character } , '"' ;
+
+literal = boolean | integer | character | string ;
+
+identifier = ( alpha | "_" ) , { alpha | digit0 | "_" } ;
+
+expression = literal
+                | identifier
+                | '(', expression, ')' ;
+
+statement = if | case | expression ;
+
+block = { statement } ;
+
+if = 'if', expression, "then", block, [ 'else', (if | block ) ] ;
+
+case = 'case' , expression , '{' , { '\t' , [ { expression , "' '" } ] ,  return , '\n' } , '}' ;
+
+typename = uppercase, { identifier } ;
+
+argument = { lowercase } ;
+
+name = lowercase , { identifier } ; 
+
+struct = 'struct', typename, argument, '{', { '\t', typename, { argument }, '\n' }, '}' ;
+
+parameters = typename , [ { ',', typename } ] ;
+
+return = ( '=' | 'return' ) , [ statement ] ;
+
+function prototype = name, '::', [ ( parameters ) , '->' ] , typename ; 
+
+function definition = name, '{' , { '\t' , [ { expression , "' '" } ] , return , '\n' } , '}' ;
+
+lamba function = '?' , ( parameters , '->' , return ) , '{' , { '\t' , [ { expression , "' '" } ] , return , '\n' } , '}' ;
+
+interface = 'interface' , typename , parameters , [ 'extends' , typename , parameters ] , '{' , { '\t' , function prototype , '\n' } , '}' ;
+
+implement = 'implement' , typename , typename , '{' , { '\t' , function definition , '\n' } , '}' ;

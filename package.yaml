@@ -2,9 +2,9 @@ name:                dawn
 version:             0.1.0.0
 github:              "githubuser/dawn"
 license:             BSD-3-Clause
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2023 Author name here"
+author:              "Agakitsune, nourrysebastienN"
+maintainer:          "raphael.turpin@epitech.eu, nourry.sebastien@epitech.eu"
+copyright:           "2023 Agakitsune, nourrysebastienN"
 
 extra-source-files:
 - README.md
@@ -24,6 +24,15 @@ dependencies:
 - text
 - containers
 - monadplus
+- ghc
+- bytestring
+- hashable
+- unordered-containers
+- ansi-terminal
+- transformers
+- filepath
+- directory
+- process
 
 ghc-options:
 - -Wall
@@ -38,11 +47,70 @@ ghc-options:
 
 library:
   source-dirs: src
+  exposed-modules:
+  - Monoparsec
+  - Monoparsec.State
+  - Monoparsec.Stream
+  - Monoparsec.Token
+  - Monoparsec.Message
+  - Monoparsec.Debug
+
+  - System.Console.Hawk
+
+  - Instructions
+
+  - Dawn
+  - Dusk
+  - Twillight
+  - Option
+  other-modules:
+  - Monoparsec.Misc
+  - Monoparsec.Message.Item
+  - Monoparsec.Message.Range
+  - Monoparsec.Message.Reason
+  - Monoparsec.Message.Type
+  - Monoparsec.Monad
+  - Monoparsec.Monad.MonadParsec
+  - Monoparsec.Monad.Option
+
+  - Data.Hawk.Any
+  - Data.Hawk.Any.Prelude
+  - System.Console.Hawk.Annotate
+  - System.Console.Hawk.Default
+  - System.Console.Hawk.Explicit
+  - System.Console.Hawk.Explicit.Complete
+  - System.Console.Hawk.Explicit.ExpandArgsAt
+  - System.Console.Hawk.Explicit.Help
+  - System.Console.Hawk.Explicit.Process
+  - System.Console.Hawk.Explicit.SplitJoin
+  - System.Console.Hawk.Explicit.Type
+  - System.Console.Hawk.Helper
+  - System.Console.Hawk.Implicit
+  - System.Console.Hawk.Implicit.Extra
+  - System.Console.Hawk.Implicit.Global
+  - System.Console.Hawk.Implicit.Local
+  - System.Console.Hawk.Implicit.Reader
+  - System.Console.Hawk.Implicit.Reform
+  - System.Console.Hawk.Implicit.Type
+  - System.Console.Hawk.Implicit.UI
+  - System.Console.Hawk.Text
+  - System.Console.Hawk.Verbosity
 
 executables:
   dawn-exe:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:
+    - dawn-app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dawn
+  dawnc-exe:
+    main:               Main.hs
+    source-dirs:
+    - dawnc-app
     ghc-options:
     - -threaded
     - -rtsopts
@@ -60,3 +128,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - dawn
+    - HUnit
