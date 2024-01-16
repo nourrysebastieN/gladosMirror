@@ -381,8 +381,12 @@ defaultProg = Prog
         (Tok 0 0 "+", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
         (Tok 0 0 "-", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
         (Tok 0 0 "*", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
-        (Tok 0 0 "/", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
-        (Tok 0 0 "print", [Simple_ "Int"], Simple_ "IO")
+        (Tok 0 0 "div", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
+        -- (Tok 0 0 "printI", [Simple_ "Int"], Simple_ "IO"),
+        -- (Tok 0 0 "printB", [Simple_ "Bool"], Simple_ "IO"),
+        -- (Tok 0 0 "printC", [Simple_ "Char"], Simple_ "IO"),
+        -- (Tok 0 0 "printS", [Simple_ "String"], Simple_ "IO"),
+        (Tok 0 0 "print", [Simple_ "..."], Simple_ "IO")
     ]
     [
 

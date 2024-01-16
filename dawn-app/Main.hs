@@ -10,9 +10,10 @@ import System.Console.Hawk
 import System.Directory
 import Control.Exception
 import Control.Monad
+import Control.Applicative
 import qualified Data.ByteString as B
 
-import Twillight
+import qualified Twillight as T
 
 data VMOption = Option {
         sources :: String,
@@ -47,9 +48,9 @@ computeOption (Option src d) = exec
         file name b = unless b (putErrStrLn ("dawn: " ++ name ++ ": No such file or directory") >> exitFailure) >> return name
         contents = B.readFile =<< check
         exec = exec' =<< contents
-        exec' i = guar =<< (try $ execute $ B.unpack i)
+        exec' i = (guard d >> (T.dump $ B.unpack i)) <|> (guar =<< (try $ T.execute $ B.unpack i))
         
-        guar :: Either IOError VMState -> IO ()
+        guar :: Either IOError T.VMState -> IO ()
         guar (Left e) = putErrStrLn ("dawnc: " ++ (ioeGetErrorString e)) >> exitFailure
         guar (Right s) = return ()
 

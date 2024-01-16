@@ -10,9 +10,9 @@ all:
 
 clean:
 	stack clean
+	rm -f *.test
 
-fclean:
-	stack clean --full
+fclean: clean
 	rm -f $(COMPILER_NAME)
 	rm -f $(VM_NAME)
 

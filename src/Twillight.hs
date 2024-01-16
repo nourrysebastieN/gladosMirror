@@ -81,8 +81,12 @@ op :: String -> [Word8]
 op "+" = [fromIntegral (fromEnum Add)]
 op "-" = [fromIntegral (fromEnum Sub)]
 op "*" = [fromIntegral (fromEnum Mul)]
-op "/" = [fromIntegral (fromEnum Div)]
+op "div" = [fromIntegral (fromEnum Div)]
 op "print" = [fromIntegral (fromEnum Print)]
+-- op "printB" = [fromIntegral (fromEnum Print)]
+-- op "printI" = [fromIntegral (fromEnum Print)]
+-- op "printS" = [fromIntegral (fromEnum Print)]
+-- op "printC" = [fromIntegral (fromEnum Print)]
 op _ = []
 
 instance Enum Instruction where
@@ -196,7 +200,8 @@ add state = case stack state of
 
 sub :: VMState -> IO VMState
 sub state = case stack state of
-    (a:b:xs) -> push <$> (sub' a b) <*> (pure (pop' 2 state))
+    -- Flip arguments because of stack
+    (a:b:xs) -> push <$> (sub' b a) <*> (pure (pop' 2 state))
     _ -> fail "error: Sub: Missing argument"
 
 mul :: VMState -> IO VMState
@@ -206,7 +211,8 @@ mul state = case stack state of
 
 div :: VMState -> IO VMState
 div state = case stack state of
-    (a:b:xs) -> push <$> (div' a b) <*> (pure (pop' 2 state))
+    -- Flip arguments because of stack
+    (a:b:xs) -> push <$> (div' b a) <*> (pure (pop' 2 state))
     _ -> fail "error: Div: Missing argument"
 
 display :: VMState -> IO VMState
@@ -259,8 +265,74 @@ execute' state l = exec h
             Mul -> mul (next 1 state) >>= flip execute' l
             Div -> Twillight.div (next 1 state) >>= flip execute' l
 
+dumpB :: [Word8] -> IO [Word8]
+dumpB [] = pure []
+dumpB (x:xs) = print x >> (pure xs)
+    where
+        c = if (fromIntegral x :: Int) > 0 then True else False 
+
+dumpI :: [Word8] -> IO [Word8]
+dumpI [] = pure []
+dumpI (x:y:z:w:xs) = print n >> (pure xs)
+    where
+        n = (fromIntegral (fromIntegral x :: Int8) :: Int) * 16777216 + (fromIntegral y :: Int) * 65536 + (fromIntegral z :: Int) * 256 + (fromIntegral w :: Int)
+
+dumpS :: [Word8] -> IO [Word8]
+dumpS [] = pure []
+dumpS l = print c >> (pure (Prelude.drop (Prelude.length c) l))
+    where
+        c = C.unpack $ Data.ByteString.takeWhile (/= 0) $ pack l
+
+dumpC :: [Word8] -> IO [Word8]
+dumpC [] = pure []
+dumpC (x:xs) = print c >> (pure xs)
+    where
+        c = (toEnum (fromIntegral x :: Int) :: Char)
+
+dumpA :: [Word8] -> IO [Word8]
+dumpA [] = pure []
+dumpA (x:y:z:w:xs) = print n >> (pure xs)
+    where
+        n = (fromIntegral (fromIntegral x :: Int8) :: Int) * 16777216 + (fromIntegral y :: Int) * 65536 + (fromIntegral z :: Int) * 256 + (fromIntegral w :: Int)
+
+dumpPopN :: [Word8] -> IO [Word8]
+dumpPopN [] = pure []
+dumpPopN (x:xs) = print n >> (pure xs)
+    where
+        n = fromIntegral x :: Int
+
+dump' :: [Word8] -> IO ()
+dump' [] = pure ()
+dump' l@(x:xs) = d
+    where
+        d = case toEnum (fromIntegral x) of
+            Noop -> Prelude.putStrLn "noop" >> dump' xs
+            PushBool -> Prelude.putStr "pushbool " >> (dump' =<< dumpB xs)
+            PushInt -> Prelude.putStr "pushint " >> (dump' =<< dumpI xs)
+            PushStr -> Prelude.putStr "pushstr " >> (dump' =<< dumpS xs)
+            PushChar -> Prelude.putStr "pushchar " >> (dump' =<< dumpC xs)
+            PushStruct -> Prelude.putStrLn "pushstruct" >> dump' xs
+            PushAdress -> Prelude.putStr "pushadress 0x" >> (dump' =<< dumpA xs)
+            Extract -> Prelude.putStrLn "extract" >> dump' xs
+            Pop -> Prelude.putStrLn "pop" >> dump' xs
+            PopN -> Prelude.putStrLn "popn" >> (dump' =<< dumpPopN xs)
+            Copy -> Prelude.putStrLn "copy" >> dump' xs
+            Call -> Prelude.putStrLn "call" >> dump' xs
+            Ret -> Prelude.putStrLn "ret" >> dump' xs
+            Load -> Prelude.putStrLn "load" >> dump' xs
+            End -> Prelude.putStrLn "end" >> dump' xs
+            Crash -> Prelude.putStrLn "crash" >> dump' xs
+            Print -> Prelude.putStrLn "print" >> dump' xs
+            Add -> Prelude.putStrLn "add" >> dump' xs
+            Sub -> Prelude.putStrLn "sub" >> dump' xs
+            Mul -> Prelude.putStrLn "mul" >> dump' xs
+            Div -> Prelude.putStrLn "div" >> dump' xs
+
 execute :: [Word8] -> IO VMState
 execute l = execute' (VMState { stack = [], rip = 0 }) l
+
+dump :: [Word8] -> IO ()
+dump l = dump' l
 
 compilee :: Prog -> IO [Word8]
 compilee (Prog s f e) = case lookup3 (Tok 0 0 "main") f of
