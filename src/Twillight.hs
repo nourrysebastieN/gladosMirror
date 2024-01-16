@@ -83,10 +83,7 @@ op "-" = [fromIntegral (fromEnum Sub)]
 op "*" = [fromIntegral (fromEnum Mul)]
 op "div" = [fromIntegral (fromEnum Div)]
 op "print" = [fromIntegral (fromEnum Print)]
--- op "printB" = [fromIntegral (fromEnum Print)]
--- op "printI" = [fromIntegral (fromEnum Print)]
--- op "printS" = [fromIntegral (fromEnum Print)]
--- op "printC" = [fromIntegral (fromEnum Print)]
+op "error" = [fromIntegral (fromEnum Crash)]
 op _ = []
 
 instance Enum Instruction where
@@ -226,6 +223,17 @@ display state = case stack state of
         Adress _ -> fail "error: Print: Not implemented"
     _ -> fail "error: Print: Missing argument"
 
+crash :: VMState -> IO VMState
+crash state = case stack state of
+    (a:xs) -> case a of
+        Boolean b -> fail "error: Crash: Not implemented"
+        Integer i -> fail "error: Crash: Not implemented"
+        Str s -> fail ("error: " ++ s)
+        Character c -> fail "error: Crash: Not implemented"
+        Struct _ _ _ -> fail "error: Crash: Not implemented"
+        Adress _ -> fail "error: Crash: Not implemented"
+    _ -> fail "error: Crash: Missing argument"
+
 push :: Typee -> VMState -> VMState
 push t state = state { stack = t : stack state }
 
@@ -258,7 +266,7 @@ execute' state l = exec h
             Ret -> fail "error: Ret: Not implemented"
             Load -> fail "error: Load: Not implemented"
             End -> fail "error: End: Not implemented"
-            Crash -> fail "error: Crash: Not implemented"
+            Crash -> crash (next 1 state) >>= flip execute' l
             Print -> display (next 1 state) >>= flip execute' l
             Add -> add (next 1 state) >>= flip execute' l
             Sub -> sub (next 1 state) >>= flip execute' l
@@ -279,7 +287,7 @@ dumpI (x:y:z:w:xs) = print n >> (pure xs)
 
 dumpS :: [Word8] -> IO [Word8]
 dumpS [] = pure []
-dumpS l = print c >> (pure (Prelude.drop (Prelude.length c) l))
+dumpS l = print c >> (pure (Prelude.drop ((Prelude.length c) + 1) l))
     where
         c = C.unpack $ Data.ByteString.takeWhile (/= 0) $ pack l
 

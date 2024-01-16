@@ -51,7 +51,7 @@ computeOption (Option src d) = exec
         exec' i = (guard d >> (T.dump $ B.unpack i)) <|> (guar =<< (try $ T.execute $ B.unpack i))
         
         guar :: Either IOError T.VMState -> IO ()
-        guar (Left e) = putErrStrLn ("dawnc: " ++ (ioeGetErrorString e)) >> exitFailure
+        guar (Left e) = putErrStrLn ("dawn: " ++ (ioeGetErrorString e)) >> exitFailure
         guar (Right s) = return ()
 
 main :: IO ()
