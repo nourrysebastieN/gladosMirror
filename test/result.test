@@ -1,0 +1,73 @@
+int 0 42
+bool 0 True
+char 0 'a'
+str 0 "hello world"
+
+add 0 15
+sub 0 2
+mul 0 25
+div 0 1
+mod 0 0
+
+put 0 hello world
+
+showBool 0 True
+showChar 0 'c'
+showInt 0 42
+
+error 1 dawn: error: hello world
+div0 1 dawn: error: Div: divide by 0
+mod0 1 dawn: error: Mod: divide by 0
+
+priority 0 6
+precedence 0 3
+parenthesis 0 8
+big 0 4390
+
+and 0 False
+and2 0 False
+and3 0 False
+and4 0 True
+
+or 0 False
+or2 0 True
+or3 0 True
+or4 0 True
+
+xor 0 False
+xor2 0 True
+xor3 0 True
+xor4 0 False
+
+not 0 False
+not2 0 True
+
+eq 0 True
+eq2 0 False
+
+eqAlt 0 True
+eqAlt2 0 False
+eqAlt3 0 False
+eqAlt4 0 True
+
+neq 0 False
+neq2 0 True
+
+neqAlt 0 False
+neqAlt2 0 True
+neqAlt3 0 True
+neqAlt4 0 False
+
+lt 0 True
+lt2 0 False
+
+gt 0 False
+gt2 0 True
+
+leq 0 True
+leq2 0 False
+leq3 0 True
+
+geq 0 False
+geq2 0 True
+geq3 0 True

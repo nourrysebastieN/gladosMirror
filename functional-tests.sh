@@ -3,7 +3,7 @@
 success=0
 failure=0
 
-compile_file_success() {
+compile_file() {
     echo "Compiling: " $1
     output=$(./dawnc $1 -o $2)
     if [ ! -f $2 ]; then
@@ -15,20 +15,7 @@ compile_file_success() {
     fi
 }
 
-execution_file_success() {
-    echo "Executing: " $1
-    output=$(./dawn $1)
-    if [ "$output" != "$2" ]; then
-        echo "  Execution failed: " $1
-        echo "  Expected: " $2
-        echo "  Got: " $output
-        failure=$((failure+1))
-    else
-        success=$((success+1))
-    fi
-}
-
-execution_file_error() {
+execution_file_code() {
     echo "Executing: " $1
     output=$(./dawn $1 2>&1)
     if [ ! $? -eq $3 ]; then
@@ -46,6 +33,31 @@ execution_file_error() {
     fi
 }
 
+compile_directory() {
+    echo "Entering directory: " $1
+    for file in $(ls $1); do
+        if [ -d $1/$file ]; then
+            compile_directory $1/$file
+        elif [[ $file == *.dawn ]]; then
+            echo -n "  "
+            compile_file $1/$file $file.test
+        fi
+    done
+}
+
+launch_test() {
+    echo "Launching test: " $1
+    while IFS= read -r line; do
+        if [ -n "$line" ]; then
+            file=$(echo $line | cut -d' ' -f1)
+            code=$(echo $line | cut -d' ' -f2)
+            output=$(echo $line | cut -d' ' -f3-)
+            echo -n "  "
+            execution_file_code $file.dawn.test "$output" $code
+        fi
+    done < "$1"
+}
+
 if [ ! -f "dawnc" ]; then
     make
 fi
@@ -56,29 +68,20 @@ fi
 
 rm -f *.test
 
-compile_file_success "test/int.dawn" "int.test"
-compile_file_success "test/bool.dawn" "bool.test"
-compile_file_success "test/char.dawn" "char.test"
-compile_file_success "test/str.dawn" "str.test"
+compile_directory "test/functionals"
+launch_test "test/result.test"
 
-compile_file_success "test/add.dawn" "add.test"
-compile_file_success "test/sub.dawn" "sub.test"
-compile_file_success "test/mul.dawn" "mul.test"
-compile_file_success "test/div.dawn" "div.test"
+# execution_file_success "int.test" "42"
+# execution_file_success "bool.test" "True"
+# execution_file_success "char.test" "'a'"
+# execution_file_success "str.test" "hello world"
 
-compile_file_success "test/error.dawn" "error.test"
+# execution_file_success "add.test" "15"
+# execution_file_success "sub.test" "2"
+# execution_file_success "mul.test" "25"
+# execution_file_success "div.test" "1"
 
-execution_file_success "int.test" "42"
-execution_file_success "bool.test" "True"
-execution_file_success "char.test" "'a'"
-execution_file_success "str.test" "hello world"
-
-execution_file_success "add.test" "15"
-execution_file_success "sub.test" "2"
-execution_file_success "mul.test" "25"
-execution_file_success "div.test" "1"
-
-execution_file_error "error.test" "dawn: error: hello world" 1
+# execution_file_error "error.test" "dawn: error: hello world" 1
 
 echo "-------------"
 echo "Test results:"

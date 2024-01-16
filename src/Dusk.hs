@@ -31,10 +31,10 @@ instance Show Type_ where
     show (Complex_ s l) = s <> " " <> (intercalate " " $ map show l)
 
 instance Eq Type_ where
-    (==) (Simple_ a) (Simple_ b) = a == b
-    (==) (Complex_ a b) (Complex_ c d) = a == c && b == d
     (==) (Simple_ "...") (Simple_ _) = True
     (==) (Simple_ _) (Simple_ "...") = True
+    (==) (Simple_ a) (Simple_ b) = a == b
+    (==) (Complex_ a b) (Complex_ c d) = a == c && b == d
     (==) _ _ = False
 
 type S = (Tok String, [String], [(String, [String])])
@@ -179,10 +179,21 @@ literalType' tok@(fromToken -> (Structure n exs)) t p =
 
 expressionType' :: Tok Expression -> Type_ -> Prog -> Either [Message String] Type_
 expressionType' (fromToken -> (Literal l)) t p = literalType' l t p
-expressionType' (fromToken -> (Call n _)) _ p =
+expressionType' (fromToken -> (Call n exs)) _ p =
     case lookup3 n (funcs p) of
         Nothing -> Left $ [Msg.errorString (toRange n) ("function '" <> (fromToken n) <> "' not found")]
-        Just (_, _, r) -> Right r
+        Just (_, f, r) -> if (length f) == (length exs)
+            then 
+                let func t ei = case ei of
+                        Left a -> Left a
+                        Right t' -> if (t == t')
+                            then Right t
+                            else Left $ [Msg.errorString (toRange n) ("expected '" <> (show t) <> "' but got '" <> (show t') <> "'")]
+                    t' = map (\(e,t) -> func t $ expressionType_ e p) (zip exs f)
+                in case (lefts t') of
+                    [] -> Right r
+                    l -> Left $ concat l
+            else Left $ [Msg.errorString (toRange n) ("expecting " <> (show $ length f) <> " arguments to '" <> (fromToken n) <> "'")]
 expressionType' (fromToken -> (Fold e)) t p = expressionType' e t p
 
 literalType :: Tok Literal -> [(String, Type_)] -> Prog -> Either [Message String] Type_
@@ -255,10 +266,21 @@ expressionType (fromToken -> (Fold e)) t p = expressionType e t p
 
 expressionType_ :: Tok Expression -> Prog -> Either [Message String] Type_
 expressionType_ (fromToken -> (Literal l)) p = literalType_ l p
-expressionType_ (fromToken -> (Call n _)) p =
+expressionType_ (fromToken -> (Call n exs)) p =
     case lookup3 n (funcs p) of
         Nothing -> Left $ [Msg.errorString (toRange n) ("function '" <> (fromToken n) <> "' not found")]
-        Just (_, _, r) -> Right r
+        Just (_, f, r) -> if (length f) == (length exs)
+            then 
+                let func t ei = case ei of
+                        Left a -> Left a
+                        Right t' -> if (t == t')
+                            then Right t
+                            else Left $ [Msg.errorString (toRange n) ("expected '" <> (show t) <> "' but got '" <> (show t') <> "'")]
+                    t' = map (\(e,t) -> func t $ expressionType_ e p) (zip exs f)
+                in case (lefts t') of
+                    [] -> Right r
+                    l -> Left $ concat l
+            else Left $ [Msg.errorString (toRange n) ("expecting " <> (show $ length f) <> " arguments to '" <> (fromToken n) <> "'")]
 expressionType_ (fromToken -> (Fold e)) p = expressionType_ e p
 
 checkLiteralType :: Tok Literal -> Type_ -> Prog -> Maybe [Message String]
@@ -382,14 +404,30 @@ defaultProg = Prog
         (Tok 0 0 "-", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
         (Tok 0 0 "*", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
         (Tok 0 0 "div", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
+        (Tok 0 0 "mod", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
+        
+        (Tok 0 0 "eq", [Simple_ "Int", Simple_ "Int"], Simple_ "Bool"),
+        (Tok 0 0 "neq", [Simple_ "Int", Simple_ "Int"], Simple_ "Bool"),
+        (Tok 0 0 ">", [Simple_ "Int", Simple_ "Int"], Simple_ "Bool"),
+        (Tok 0 0 "<", [Simple_ "Int", Simple_ "Int"], Simple_ "Bool"),
+        (Tok 0 0 ">=", [Simple_ "Int", Simple_ "Int"], Simple_ "Bool"),
+        (Tok 0 0 "<=", [Simple_ "Int", Simple_ "Int"], Simple_ "Bool"),
+
+        (Tok 0 0 "==", [Simple_ "Bool", Simple_ "Bool"], Simple_ "Bool"),
+        (Tok 0 0 "!=", [Simple_ "Bool", Simple_ "Bool"], Simple_ "Bool"),
+        (Tok 0 0 "||", [Simple_ "Bool", Simple_ "Bool"], Simple_ "Bool"),
+        (Tok 0 0 "&&", [Simple_ "Bool", Simple_ "Bool"], Simple_ "Bool"),
+        (Tok 0 0 "not", [Simple_ "Bool"], Simple_ "Bool"),
+        (Tok 0 0 "!|", [Simple_ "Bool", Simple_ "Bool"], Simple_ "Bool"), -- xor
+        
         (Tok 0 0 "print", [Simple_ "..."], Simple_ "IO"),
+        (Tok 0 0 "put", [Simple_ "String"], Simple_ "IO"),
+        (Tok 0 0 "show", [Simple_ "..."], Simple_ "String"),
         (Tok 0 0 "error", [Simple_ "String"], Simple_ "IO")
     ]
     [
 
     ]
-
--- (Tok String, [Type_], Type_)
 
 compile :: [Tok Declaration] -> Either [Message String] Prog
 compile l = foldl (\a b -> a >>= compileDeclaration b) (Right defaultProg) l
