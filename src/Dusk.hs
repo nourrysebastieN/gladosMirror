@@ -102,6 +102,7 @@ builtin "Int" = True
 builtin "Bool" = True
 builtin "Char" = True
 builtin "String" = True
+builtin "IO" = True
 builtin _ = False
 
 checkType :: Tok Dawn.Type -> Prog -> Maybe [Message String]
@@ -371,17 +372,23 @@ compileDeclaration (fromToken -> (FunctionSpec n@(Tok i j n') es)) p =
 
         transform entry = (map fromToken $ fst entry, fromToken $ snd entry)
 
--- defaultProg :: Prog
--- defaultProg = Prog
---     [
+defaultProg :: Prog
+defaultProg = Prog
+    [
 
---     ],
---     [
+    ]
+    [
+        (Tok 0 0 "+", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
+        (Tok 0 0 "-", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
+        (Tok 0 0 "*", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
+        (Tok 0 0 "/", [Simple_ "Int", Simple_ "Int"], Simple_ "Int"),
+        (Tok 0 0 "print", [Simple_ "Int"], Simple_ "IO")
+    ]
+    [
 
---     ],
---     [
+    ]
 
---     ]
+-- (Tok String, [Type_], Type_)
 
 compile :: [Tok Declaration] -> Either [Message String] Prog
-compile l = foldl (\a b -> a >>= compileDeclaration b) (Right $ Prog [] [] []) l
+compile l = foldl (\a b -> a >>= compileDeclaration b) (Right defaultProg) l

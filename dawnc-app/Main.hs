@@ -12,6 +12,10 @@ import System.Directory
 import Control.Exception
 import Control.Monad
 import Data.Data
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
+import Data.Maybe
+import Data.Word
 
 import Option
 import Dawn as P
@@ -37,6 +41,7 @@ compilerOption = build (Option {})
         , assembly :! def ! explicit ! name "asm" ! help "Dump the code into assembly like format"
 
         , werror :! def ! explicit ! name "Werror" ! help "Treat warnings as errors"
+        , output :! def ! explicit ! name "o" ! help "Output file"
     ]
     ! program "dawnc"
     ! summary "dawnc v0.4.0, (C) Agakistune, nourrysebastienN"
@@ -51,20 +56,23 @@ checkOption :: CompilerOption -> IO CompilerOption
 checkOption opt = when (null $ sources opt) (putErrStrLn "dawnc: no input files" >> exitFailure) >> return opt
 
 computeOption :: CompilerOption -> IO ()
-computeOption opt = parses >> return ()
+computeOption (Option src ast _ _ n) = parses >> return ()
     where
-        bs = mapM doesFileExist (sources opt)
-        check = zipWithM file (sources opt) =<< bs
+        bs = mapM doesFileExist src
+        check = zipWithM file src =<< bs
         file name b = unless b (putErrStrLn ("dawnc: " ++ name ++ ": No such file or directory") >> exitFailure) >> return name
         contents = mapM readFile =<< check
-        parses = zipWithM parse (sources opt) =<< contents
+        parses = zipWithM parse src =<< contents
         parse name i = 
             let res = runParse P.prog i
             in case res of
                     (s'@(State _ _ _ _), Left l) -> foldl (<>) (pure ()) (map (displayMessage name i) l)
                     (s'@(State _ _ _ l), Right a) -> case compile a of
                         Left l -> foldl (<>) (pure ()) (map (displayMessage name i) l)
-                        Right a -> displayProg a
+                        Right a' -> guar =<< (try $ when ast (print a) >> (compilee a'))
+        guar :: Either IOError [Word8] -> IO ()
+        guar (Left e) = putErrStrLn ("dawnc: " ++ (ioeGetErrorString e)) >> exitFailure
+        guar (Right s) = B.writeFile (fromMaybe "a.out" n) $ B.pack s
 
 main :: IO ()
 main = computeOption =<< checkOption =<< (hawk compilerOption :: IO CompilerOption)
@@ -78,7 +86,7 @@ test = parse "b.dawn" =<< readFile "b.dawn"
                 (s'@(State _ _ _ _), Left l) -> foldl (<>) (pure ()) (map (displayMessage name i) l)
                 (s'@(State _ _ _ l), Right a) -> case compile a of
                     Left l -> foldl (<>) (pure ()) (map (displayMessage name i) l)
-                    Right a -> displayProg a
+                    Right a' -> print a >> (print =<< compileTest a')
 
 -- a :: Maybe Int Int -> Int
 -- a = (+)

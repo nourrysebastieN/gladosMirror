@@ -12,12 +12,16 @@ import Control.Exception
 
 import Debug.Trace
 
-data Type
+import qualified Dawn as D
+import Dusk
+import Monoparsec (Tok(..), fromToken)
+
+data Typee
     = Boolean Bool
     | Integer Int
     | Str String
     | Character Char
-    | Struct Int Int [Type]
+    | Struct Int Int [Typee]
     | Adress Int
     deriving (Show, Eq)
 
@@ -46,13 +50,40 @@ data Instruction
     
     | Crash
     | Print
+
+    | Add
+    | Sub
+    | Mul
+    | Div
     deriving (Show, Eq)
 
 data VMState = VMState
     { 
-        stack :: [Type],
+        stack :: [Typee],
         rip :: Int
     } deriving (Show, Eq)
+
+class Compiler a where
+    compile' :: a -> [Word8]
+
+instance Compiler D.Literal where
+    compile' (D.Boolean b) = [fromIntegral (fromEnum PushBool), fromIntegral (fromEnum b)]
+    compile' (D.Integer i) = [fromIntegral (fromEnum PushInt), fromIntegral (fromEnum (i `Prelude.div` 16777216)), fromIntegral (fromEnum (i `Prelude.div` 65536)), fromIntegral (fromEnum (i `Prelude.div` 256)), fromIntegral (fromEnum i)]
+    compile' (D.Str s) = [fromIntegral (fromEnum PushStr)] ++ (Prelude.map (fromIntegral . fromEnum) s) ++ [0]
+    compile' (D.Character c) = [fromIntegral (fromEnum PushChar), fromIntegral (fromEnum c)]
+
+instance Compiler D.Expression where
+    compile' (D.Literal l) = (compile' . fromToken) l
+    compile' (D.Call o a) = (Prelude.concat $ Prelude.map (compile' . fromToken) a) ++ ((op . fromToken) o)
+    compile' (D.Fold e) = (compile' . fromToken) e
+
+op :: String -> [Word8]
+op "+" = [fromIntegral (fromEnum Add)]
+op "-" = [fromIntegral (fromEnum Sub)]
+op "*" = [fromIntegral (fromEnum Mul)]
+op "/" = [fromIntegral (fromEnum Div)]
+op "print" = [fromIntegral (fromEnum Print)]
+op _ = []
 
 instance Enum Instruction where
     fromEnum Noop = 0x00
@@ -72,6 +103,10 @@ instance Enum Instruction where
     fromEnum End = 0x0e
     fromEnum Crash = 0x0f
     fromEnum Print = 0x10
+    fromEnum Add = 0x11
+    fromEnum Sub = 0x12
+    fromEnum Mul = 0x13
+    fromEnum Div = 0x14
 
     toEnum 0x00 = Noop
     toEnum 0x01 = PushBool
@@ -90,51 +125,102 @@ instance Enum Instruction where
     toEnum 0x0e = End
     toEnum 0x0f = Crash
     toEnum 0x10 = Print
+    toEnum 0x11 = Add
+    toEnum 0x12 = Sub
+    toEnum 0x13 = Mul
+    toEnum 0x14 = Div
+
+add' :: Typee -> Typee -> IO Typee
+add' (Integer a) (Integer b) = pure (Integer (a + b))
+add' _ _ = fail "error: Add: Invalid argument"
+
+sub' :: Typee -> Typee -> IO Typee
+sub' (Integer a) (Integer b) = pure (Integer (a - b))
+sub' _ _ = fail "error: Sub: Invalid argument"
+
+mul' :: Typee -> Typee -> IO Typee
+mul' (Integer a) (Integer b) = pure (Integer (a * b))
+mul' _ _ = fail "error: Mul: Invalid argument"
+
+div' :: Typee -> Typee -> IO Typee
+div' (Integer a) (Integer b) = when (b == 0) (fail "error: Div: div by 0") >> (pure (Integer (a `Prelude.div` b)))
+div' _ _ = fail "error: Div: Invalid argument"
 
 pushBool :: VMState -> [Word8] -> IO VMState
-pushBool state [] = fail "Error: PushBool: Missing argument"
+pushBool state [] = fail "error: PushBool: Missing argument"
 pushBool state (x:_) = pure (push (Boolean c) (next 1 state))
     where
         c = if (fromIntegral x :: Int) > 0 then True else False 
 
 pushInt :: VMState -> [Word8] -> IO VMState
-pushInt state [] = fail "Error: PushInt: Missing argument"
+pushInt state [] = fail "error: PushInt: Missing argument"
 pushInt state (x:y:z:w:_) = pure (push (Integer n) (next 4 state))
     where
         n = (fromIntegral (fromIntegral x :: Int8) :: Int) * 16777216 + (fromIntegral y :: Int) * 65536 + (fromIntegral z :: Int) * 256 + (fromIntegral w :: Int)
-pushInt state _ = fail "Error: PushInt: Invalid argument"
+pushInt state _ = fail "error: PushInt: Invalid argument"
 
 pushStr :: VMState -> [Word8] -> IO VMState
-pushStr state [] = fail "Error: PushStr: Missing argument"
+pushStr state [] = fail "error: PushStr: Missing argument"
 pushStr state l = pure (push (Str c) (next ((Prelude.length c) + 1) state))
     where
         c = C.unpack $ Data.ByteString.takeWhile (/= 0) $ pack l
 
 pushChar :: VMState -> [Word8] -> IO VMState
-pushChar state [] = fail "Error: PushChar: Missing argument"
+pushChar state [] = fail "error: PushChar: Missing argument"
 pushChar state (x:_) = pure (push (Character (toEnum (fromIntegral x :: Int))) (next 1 state))
 
 pushStruct :: VMState -> [Word8] -> IO VMState
-pushStruct _ _ = fail "Error: PushStruct: Not implemented"
+pushStruct _ _ = fail "error: PushStruct: Not implemented"
 
 pushAdress :: VMState -> [Word8] -> IO VMState
-pushAdress state [] = fail "Error: PushAddress: Missing argument"
+pushAdress state [] = fail "error: PushAddress: Missing argument"
 pushAdress state (x:y:z:w:_) = pure (push (Adress n) (next 4 state))
     where
         n = (fromIntegral (fromIntegral x :: Int8) :: Int) * 16777216 + (fromIntegral y :: Int) * 65536 + (fromIntegral z :: Int) * 256 + (fromIntegral w :: Int)
-pushAdress state _ = fail "Error: PushAddress: Invalid argument"
+pushAdress state _ = fail "error: PushAddress: Invalid argument"
 
 extract :: VMState -> [Word8] -> IO VMState
-extract _ _ = fail "Error: Extract: Not implemented"
+extract _ _ = fail "error: Extract: Not implemented"
 
 pop :: VMState -> IO VMState
 pop state = pure (pop' 1 state)
 
 popN :: VMState -> [Word8] -> IO VMState
-popN state [] = fail "Error: PopN: Missing argument"
+popN state [] = fail "error: PopN: Missing argument"
 popN state (x:_) = pure (pop' (fromIntegral x :: Int) state)
 
-push :: Type -> VMState -> VMState
+add :: VMState -> IO VMState
+add state = case stack state of
+    (a:b:xs) -> push <$> (add' a b) <*> (pure (pop' 2 state))
+    _ -> fail "error: Add: Missing argument"
+
+sub :: VMState -> IO VMState
+sub state = case stack state of
+    (a:b:xs) -> push <$> (sub' a b) <*> (pure (pop' 2 state))
+    _ -> fail "error: Sub: Missing argument"
+
+mul :: VMState -> IO VMState
+mul state = case stack state of
+    (a:b:xs) -> push <$> (mul' a b) <*> (pure (pop' 2 state))
+    _ -> fail "error: Mul: Missing argument"
+
+div :: VMState -> IO VMState
+div state = case stack state of
+    (a:b:xs) -> push <$> (div' a b) <*> (pure (pop' 2 state))
+    _ -> fail "error: Div: Missing argument"
+
+display :: VMState -> IO VMState
+display state = case stack state of
+    (a:xs) -> case a of
+        Boolean b -> Prelude.putStrLn (show b) >> pure (pop' 1 state)
+        Integer i -> Prelude.putStrLn (show i) >> pure (pop' 1 state)
+        Str s -> Prelude.putStrLn s >> pure (pop' 1 state)
+        Character c -> Prelude.putStrLn (show c) >> pure (pop' 1 state)
+        Struct _ _ _ -> fail "error: Print: Not implemented"
+        Adress _ -> fail "error: Print: Not implemented"
+    _ -> fail "error: Print: Missing argument"
+
+push :: Typee -> VMState -> VMState
 push t state = state { stack = t : stack state }
 
 pop' :: Int -> VMState -> VMState
@@ -146,28 +232,54 @@ next n state = state { rip = rip state + n }
 
 execute' :: VMState -> [Word8] -> IO VMState
 execute' state [] = pure state
-execute' state l = check h
+execute' state l = exec h
     where
         h = Prelude.drop (rip state) l
-        check [] = pure state
-        check l'@(x:xs) = case toEnum (fromIntegral x) of
+        exec [] = pure state
+        exec l'@(x:xs) = case toEnum (fromIntegral x) of
             Noop -> execute' (next 1 state) l'
-            PushBool -> pushBool (next 1 state) xs >>= flip execute' l'
-            PushInt -> pushInt (next 1 state) xs >>= flip execute' l'
-            PushStr -> pushStr (next 1 state) xs >>= flip execute' l'
-            PushChar -> pushChar (next 1 state) xs >>= flip execute' l'
-            PushStruct -> pushStruct (next 1 state) xs >>= flip execute' l'
-            PushAdress -> pushAdress (next 1 state) xs >>= flip execute' l'
-            Extract -> extract (next 1 state) xs >>= flip execute' l'
-            Pop -> pop (next 1 state) >>= flip execute' l'
-            PopN -> popN (next 1 state) xs >>= flip execute' l'
-            Copy -> fail "Error: Copy: Not implemented"
-            Call -> fail "Error: Call: Not implemented"
-            Ret -> fail "Error: Ret: Not implemented"
-            Load -> fail "Error: Load: Not implemented"
-            End -> fail "Error: End: Not implemented"
-            Crash -> fail "Error: Crash: Not implemented"
-            Print -> fail "Error: Print: Not implemented"
+            PushBool -> pushBool (next 1 state) xs >>= flip execute' l
+            PushInt -> pushInt (next 1 state) xs >>= flip execute' l
+            PushStr -> pushStr (next 1 state) xs >>= flip execute' l
+            PushChar -> pushChar (next 1 state) xs >>= flip execute' l
+            PushStruct -> pushStruct (next 1 state) xs >>= flip execute' l
+            PushAdress -> pushAdress (next 1 state) xs >>= flip execute' l
+            Extract -> extract (next 1 state) xs >>= flip execute' l
+            Pop -> pop (next 1 state) >>= flip execute' l
+            PopN -> popN (next 1 state) xs >>= flip execute' l
+            Copy -> fail "error: Copy: Not implemented"
+            Call -> fail "error: Call: Not implemented"
+            Ret -> fail "error: Ret: Not implemented"
+            Load -> fail "error: Load: Not implemented"
+            End -> fail "error: End: Not implemented"
+            Crash -> fail "error: Crash: Not implemented"
+            Print -> display (next 1 state) >>= flip execute' l
+            Add -> add (next 1 state) >>= flip execute' l
+            Sub -> sub (next 1 state) >>= flip execute' l
+            Mul -> mul (next 1 state) >>= flip execute' l
+            Div -> Twillight.div (next 1 state) >>= flip execute' l
 
 execute :: [Word8] -> IO VMState
 execute l = execute' (VMState { stack = [], rip = 0 }) l
+
+compilee :: Prog -> IO [Word8]
+compilee (Prog s f e) = case lookup3 (Tok 0 0 "main") f of
+    Just (_, [], (Simple_ "IO")) -> case lookup (Tok 0 0 "main") e of
+        Just (x:xs) -> (pure . compile' . snd) x
+        Just [] -> fail "error: No entry for main"
+        Nothing -> fail "error: No entry for main"
+    Just (_, [], _) -> fail "error: main function must return an IO"
+    Just (_, _, _) -> fail "error: main function must have no arguments"
+    Nothing -> fail "error: No main function"
+
+compileTest :: Prog -> IO VMState
+compileTest (Prog s f e) = case lookup3 (Tok 0 0 "main") f of
+    Just (_, [], (Simple_ "IO")) -> case lookup (Tok 0 0 "main") e of
+        Just (x:xs) -> 
+            let bytecode = (compile' . snd) x
+            in print bytecode >> (execute bytecode)
+        Just [] -> fail "error: No entry for main"
+        Nothing -> fail "error: No entry for main"
+    Just (_, [], _) -> fail "error: main function must return an IO"
+    Just (_, _, _) -> fail "error: main function must have no arguments"
+    Nothing -> fail "error: No main function"

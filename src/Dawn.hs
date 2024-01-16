@@ -198,17 +198,17 @@ struct = Struct <$> (name <* sc) <*> fields <*> block
 function :: Parser Declaration
 function = (Function <$> name) >>= func
     where
-        name = noIndent *> (tokenize $ stringError "expected a identifier" identifier) <* sc <* Monoparsec.string "::"
+        name = noIndent *> (tokenize $ stringError "expected a identifier" identifier) <* sc <* Monoparsec.string "-"
 
         func f = parameters >>= (\l -> fmap (uncurry f) (alt l))
  
         alt [x] = 
             let f (Left _) = pure ([], x) <* scn
                 f (Right _) = ([x],) <$> ret
-            in secure (ahead (sc *> Monoparsec.string "->")) >>= f
+            in secure (ahead (sc *> Monoparsec.string "@")) >>= f
         alt l = (l,) <$> ret
         parameters = (:) <$> (sc *> (tokenize fullType)) <*> many (sc *> like ',' *> sc *> (tokenize fullType))
-        ret = sc *> Monoparsec.string "->" *> sc *> (tokenize fullType) <* scn
+        ret = sc *> Monoparsec.string "@" *> sc *> (tokenize fullType) <* scn
 
 functionEntry :: Int -> Parser FunctionEntry
 functionEntry n =(,) <$> matches <*> result
@@ -232,9 +232,7 @@ operator = getOffset >>= func
         check s "=" = getOffset >>= (err s)
         check s "?" = getOffset >>= (err s)
         check s ":" = getOffset >>= (err s)
-        check s "::" = getOffset >>= (err s)
-        check s "->" = getOffset >>= (err s)
-        check s "<-" = getOffset >>= (err s)
+        check s "@" = getOffset >>= (err s)
         check _ s = pure s
 
 expression :: Parser Expression
@@ -270,7 +268,7 @@ headExpression = mutate =<< (tokenize $ ((getOffset >>= fold) <|> leaf))
                 _ -> pure $ fromToken e
             Right s -> op e s
         
-        op e o = Call o <$> ((e:) <$> ((:[]) <$> (sc *> (tokenize expression))))
+        op e o = Call o <$> ((e:) <$> ((:[]) <$> (sc *> (tokenize headExpression))))
         leaf = Literal <$> tokenize literal
 
         fold s = foldOp s <|> foldExp s

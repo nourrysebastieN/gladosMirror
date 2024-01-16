@@ -2,14 +2,56 @@
 
 module Main (main) where
 
+import System.Environment
+import System.Exit
+import System.IO.Error
+import System.IO
 import System.Console.Hawk
+import System.Directory
+import Control.Exception
+import Control.Monad
+import qualified Data.ByteString as B
 
-newtype Sample = Sample {foo :: Int} deriving (Show, Data, Typeable)
+import Twillight
 
--- dummy :: Sample
-dummy = build (Sample 0) [
-        foo :! def ! help "aaaaa"
-    ] ! program "test"
+data VMOption = Option {
+        sources :: String,
+
+        dump :: Bool
+    } deriving (Show, Data, Typeable)
+
+putErrStr :: String -> IO ()
+putErrStr = hPutStr stderr
+
+putErrStrLn :: String -> IO ()
+putErrStrLn = hPutStrLn stderr
+
+vmOption :: Annotate Extra
+vmOption = build (Option {})
+    [
+        sources :! def ! argPos 0 ! typ "sources"
+        
+        , dump :! def ! explicit ! name "dump" ! help "Dump the code into assembly like format"
+    ]
+    ! program "dawn"
+    ! summary "dawn v0.4.0, (C) Agakistune, nourrysebastienN"
+
+checkOption :: VMOption -> IO VMOption
+checkOption opt = when (null $ sources opt) (putErrStrLn "dawn: no input files" >> exitFailure) >> return opt
+
+computeOption :: VMOption -> IO ()
+computeOption (Option src d) = exec
+    where
+        bs = doesFileExist src
+        check = file src =<< bs
+        file name b = unless b (putErrStrLn ("dawn: " ++ name ++ ": No such file or directory") >> exitFailure) >> return name
+        contents = B.readFile =<< check
+        exec = exec' =<< contents
+        exec' i = guar =<< (try $ execute $ B.unpack i)
+        
+        guar :: Either IOError VMState -> IO ()
+        guar (Left e) = putErrStrLn ("dawnc: " ++ (ioeGetErrorString e)) >> exitFailure
+        guar (Right s) = return ()
 
 main :: IO ()
-main = print =<< (hawk dummy :: IO Sample)
+main = computeOption =<< checkOption =<< (hawk vmOption :: IO VMOption)

@@ -13,7 +13,8 @@ data CompilerOption = Option {
         ast :: Bool,
         assembly :: Bool,
 
-        werror :: Bool
+        werror :: Bool,
+        output :: Maybe String
     } deriving (Show, Data, Typeable)
 
 instance Option CompilerOption where
@@ -23,6 +24,7 @@ instance Option CompilerOption where
         ast = False,
         assembly = False,
 
-        werror = False
+        werror = False,
+        output = Nothing
     }
     warnOpt opt msg = if werror opt then Left msg else Right msg
