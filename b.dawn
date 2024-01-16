@@ -1,0 +1,15 @@
+struct Maybe a {
+    Just a
+    Nothing
+}
+
+f :: Maybe Int -> Int
+f {
+    (Just x) = x
+    Nothing = 0
+}
+
+t :: Maybe Int -> Int
+t {
+    t = f t
+}
