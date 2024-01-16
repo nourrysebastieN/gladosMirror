@@ -1,0 +1,4 @@
+main - IO
+main {
+    = print (eq (12 * 48) (8 * 72) != False)
+}

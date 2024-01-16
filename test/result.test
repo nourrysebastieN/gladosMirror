@@ -23,6 +23,7 @@ priority 0 6
 precedence 0 3
 parenthesis 0 8
 big 0 4390
+hybrid 0 True
 
 and 0 False
 and2 0 False
