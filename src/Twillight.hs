@@ -525,6 +525,7 @@ dump' l@(x:xs) = d
             Load -> Prelude.putStrLn "load" >> dump' xs
             End -> Prelude.putStrLn "end" >> dump' xs
             Crash -> Prelude.putStrLn "crash" >> dump' xs
+            Put -> Prelude.putStrLn "put" >> dump' xs
             Print -> Prelude.putStrLn "print" >> dump' xs
             Add -> Prelude.putStrLn "add" >> dump' xs
             Sub -> Prelude.putStrLn "sub" >> dump' xs
@@ -541,12 +542,20 @@ dump' l@(x:xs) = d
             And -> Prelude.putStrLn "and" >> dump' xs
             Not -> Prelude.putStrLn "not" >> dump' xs
             Xor -> Prelude.putStrLn "xor" >> dump' xs
+            Show -> Prelude.putStrLn "show" >> dump' xs
+
+checkMagic :: [Word8] -> IO ()
+checkMagic [] = fail "error: Invalid bytecode"
+checkMagic l = when (magic /= (Prelude.take 4 l)) (fail "error: Invalid bytecode")
+
+magic :: [Word8]
+magic = [0x4c, 0xc7, 0x5b, 0x55]
 
 execute :: [Word8] -> IO VMState
-execute l = execute' (VMState { stack = [], rip = 0 }) l
+execute l = checkMagic l >> execute' (VMState { stack = [], rip = 0 }) (Prelude.drop 4 l)
 
 dump :: [Word8] -> IO ()
-dump l = dump' l
+dump l = checkMagic l >> dump' (Prelude.drop 4 l)
 
 compilee :: Prog -> IO [Word8]
 compilee (Prog s f e) = case lookup3 (Tok 0 0 "main") f of
@@ -554,7 +563,7 @@ compilee (Prog s f e) = case lookup3 (Tok 0 0 "main") f of
         Just (x:xs) ->
             let lex = ((shunting . lexer . snd) x)
                 yar = yard =<< lex
-            in compile' <$> yar
+            in (magic <>) <$> (compile' <$> yar)
         Just [] -> fail "error: No entry for main"
         Nothing -> fail "error: No entry for main"
     Just (_, [], _) -> fail "error: main function must return an IO"
