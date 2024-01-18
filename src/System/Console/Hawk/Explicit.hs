@@ -103,21 +103,17 @@ processArgs m = do
                 Just cmd -> do
                     res <- execute cmd m []
                     case res of
-                        Left err -> do
-                            hPutStrLn stderr $ "Error when running helper " ++ cmd
-                            hPutStrLn stderr err
-                            exitFailure
+                        Left err ->
+                            (hPutStrLn stderr $ "Error when running helper "
+                            ++ cmd)
+                            >> (hPutStrLn stderr err)
+                            >> exitFailure
                         Right args -> processValueIO m args
 
 readMay :: Read a => String -> Maybe a
 readMay s = case [x | (x,t) <- reads s, ("","") <- lex t] of
                 [x] -> Just x
                 _ -> Nothing
-
-#if __GLASGOW_HASKELL__ < 800
-errorWithoutStackTrace :: String -> a
-errorWithoutStackTrace = error
-#endif
 
 processValue :: Mode a -> [String] -> a
 processValue m xs = case process m xs of
@@ -126,14 +122,16 @@ processValue m xs = case process m xs of
 
 processValueIO :: Mode a -> [String] -> IO a
 processValueIO m xs = case process m xs of
-    Left x -> do hPutStrLn stderr x; exitFailure
+    Left x -> hPutStrLn stderr x >> exitFailure
     Right x -> return x
 
 flagHelpSimple :: (a -> a) -> Flag a
 flagHelpSimple f = flagNone ["help","?"] f "Display help message"
 
 flagHelpFormat :: (HelpFormat -> TextFormat -> a -> a) -> Flag a
-flagHelpFormat f = (flagOpt "" ["help","?"] upd "" "Display help message"){flagInfo = FlagOptRare ""}
+flagHelpFormat f =
+    (flagOpt "" ["help","?"] upd "" "Display help message"){
+        flagInfo = FlagOptRare ""}
     where
         upd s v = case format s of
             Left e -> Left e
@@ -142,23 +140,26 @@ flagHelpFormat f = (flagOpt "" ["help","?"] upd "" "Display help message"){flagI
         format :: String -> Either String (HelpFormat,TextFormat)
         format xs = foldl (\acc x -> f x =<< acc) (Right def) (sep xs)
             where
-                sep = words . map (\x -> if x `elem` ":," then ' ' else toLower x)
+                sep = words . map (\x ->
+                    if x `elem` ":," then ' ' else toLower x)
                 f x (a,b) = case x of
                     "all" -> Right (HelpFormatAll,b)
                     "one" -> Right (HelpFormatOne,b)
                     "def" -> Right (HelpFormatDefault,b)
                     "html" -> Right (a,HTML)
                     "text" -> Right (a,defaultWrap)
-                    "bash" -> Right (HelpFormatBash,Wrap 1000000)
-                    "zsh"  -> Right (HelpFormatZsh ,Wrap 1000000)
                     _ | all isDigit x -> Right (a,Wrap $ read x)
-                    _ -> Left "unrecognised help format, expected one of: all one def html text <NUMBER>"
+                    _ -> Left m
+
+m :: String
+m = "unrecognised help format, expected one of: all one def html text <NUMBER>"
 
 flagVersion :: (a -> a) -> Flag a
 flagVersion f = flagNone ["version","V"] f "Print version information"
 
 flagNumericVersion :: (a -> a) -> Flag a
-flagNumericVersion f = flagNone ["numeric-version"] f "Print just the version number"
+flagNumericVersion f =
+    flagNone ["numeric-version"] f "Print just the version number"
 
 flagsVerbosity :: (Verbosity -> a -> a) -> [Flag a]
 flagsVerbosity f =

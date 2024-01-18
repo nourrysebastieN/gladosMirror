@@ -30,28 +30,45 @@ putErrStrLn = hPutStrLn stderr
 vmOption :: Annotate Extra
 vmOption = build (Option {})
     [
-        sources :! def ! argPos 0 ! typ "sources"
+        sources :!
+        def
+        ! argPos 0
+        ! typ "binary"
         
-        , dump :! def ! explicit ! name "dump" ! help "Dump the code into assembly like format"
+        , dump :!
+        def
+        ! explicit
+        ! name "dump"
+        ! help "Dump the code into assembly like format"
     ]
     ! program "dawn"
     ! summary "dawn v0.4.0, (C) Agakistune, nourrysebastienN"
 
 checkOption :: VMOption -> IO VMOption
-checkOption opt = when (null $ sources opt) (putErrStrLn "dawn: no input files" >> exitFailure) >> return opt
+checkOption opt =
+    when (null $ sources opt)
+        (putErrStrLn "dawn: no input files" >> exitFailure)
+    >> return opt
 
 computeOption :: VMOption -> IO ()
 computeOption (Option src d) = exec
     where
         bs = doesFileExist src
         check = file src =<< bs
-        file name b = unless b (putErrStrLn ("dawn: " ++ name ++ ": No such file or directory") >> exitFailure) >> return name
+        file name b =
+            unless b
+                (putErrStrLn ("dawn: " ++ name ++ ": No such file or directory")
+                >> exitFailure)
+            >> return name
         contents = B.readFile =<< check
         exec = exec' =<< contents
-        exec' i = (guard d >> (T.dump $ B.unpack i)) <|> (guar =<< (try $ T.execute $ B.unpack i))
+        exec' i =
+            (guard d >> (T.dump $ B.unpack i))
+            <|> (guar =<< (try $ T.execute $ B.unpack i))
         
         guar :: Either IOError T.VMState -> IO ()
-        guar (Left e) = putErrStrLn ("dawn: " ++ (ioeGetErrorString e)) >> exitFailure
+        guar (Left e) =
+            putErrStrLn ("dawn: " ++ (ioeGetErrorString e)) >> exitFailure
         guar (Right s) = return ()
 
 main :: IO ()

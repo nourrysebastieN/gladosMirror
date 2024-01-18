@@ -39,11 +39,13 @@ showWrap width xs = unlines $ concatMap f xs
         f (Line x) = map (a++) $ wrap1 (width - length a) b
             where (a,b) = span isSpace x
 
-        f (Cols xs) = concat (zipWith pad ys xs ++ [z1]) : map (replicate n ' '++) zs
+        f (Cols xs) =
+            concat (zipWith pad ys xs ++ [z1]) : map (replicate n ' '++) zs
             where ys = fromJust $ lookup (length xs) cs
                   n = sum ys + length (takeWhile isSpace $ last xs)
                   z1:zs = wrap1 (width - n) (last xs)
 
+wrap1 :: Int -> String -> [String]
 wrap1 width x = ["" | null res] ++ res
     where res = wrap width x
 
@@ -57,7 +59,8 @@ wrap width = concatMap (combine . split) . lines
                   (c,d) = span isSpace b
 
         combine :: [(String,Int)] -> [String]
-        combine ((a,b):(c,d):xs) | length a + b + length c < width = combine $ (a ++ replicate b ' ' ++ c,d):xs
+        combine ((a,b):(c,d):xs) | length a + b + length c < width =
+            combine $ (a ++ replicate b ' ' ++ c,d):xs
         combine (x:xs) = fst x : combine xs
         combine [] = []
 
@@ -70,16 +73,20 @@ showHTML xs = unlines $
         maxCols = maximum [length x | Cols x <- xs]
 
         f (Line x) = tr $ td maxCols x
-        f (Cols xs) = tr $ concatMap (td 1) (init xs) ++ td (maxCols + 1 - length xs) (last xs)
+        f (Cols xs) =
+            tr $ concatMap (td 1) (init xs)
+            ++ td (maxCols + 1 - length xs) (last xs)
 
         tr x = "<tr>" ++ x ++ "</tr>"
-        td cols x = "<td" ++ (if cols == 1 then "" else " colspan='" ++ show cols ++ "'")
-                          ++ (if null styles then "" else " style='" ++ unwords styles ++ "'") ++
-                     ">" ++ if null b then "&nbsp;" else concatMap esc b ++ "</td>"
+        td cols x = "<td"
+            ++ (if cols == 1 then "" else " colspan='" ++ show cols ++ "'")
+            ++ (if null styles then "" else " style='" ++ unwords styles++"'")
+            ++ ">" ++ if null b then "&nbsp;" else concatMap esc b ++ "</td>"
             where (a,b) = span isSpace x
 
                   isFlag = take 1 b == "-"
-                  styles = [ "padding-left:" ++ show (length a) ++ "ex;" | a /= "" ]
+                  styles =
+                        [ "padding-left:" ++ show (length a) ++ "ex;" | a/=""]
                         ++ [ "white-space:nowrap;" | isFlag ]
 
         esc '&' = "&amp;"

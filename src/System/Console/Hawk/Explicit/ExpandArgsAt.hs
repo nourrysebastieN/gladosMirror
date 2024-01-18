@@ -3,6 +3,12 @@ module System.Console.Hawk.Explicit.ExpandArgsAt(expandArgsAt) where
 
 import System.FilePath
 
+e1 :: String
+e1 = "System.Console.Hawk.Explicit.expandArgsAt, recursion in @ directives:"
+
+e2 :: String
+e2 = "System.Console.Hawk.Explicit.expandArgsAt, over 15 @ directives deep:"
+
 expandArgsAt :: [String] -> IO [String]
 expandArgsAt args = do
         ebefore <- mapM (f [] ".") before
@@ -12,10 +18,10 @@ expandArgsAt args = do
 
         f seen dir ('@':x)
             | x `elem` seen = error $ unlines $
-                "System.Console.Hawk.Explicit.expandArgsAt, recursion in @ directives:" :
+                e1 :
                 map ("  "++) (reverse $ x:seen)
             | length seen > 15 = error $ unlines $
-                "System.Console.Hawk.Explicit.expandArgsAt, over 15 @ directives deep:" :
+                e2 :
                 map ("  "++) (reverse seen)
             | otherwise = do
                 src <- readFile $ dir </> x

@@ -36,7 +36,11 @@ data CmdArgsPrivate = CmdArgsPrivate
     Int
     deriving (Eq,Ord,Data,Typeable)
 
-incArgsSeen x@Hawk{hawkPrivate = CmdArgsPrivate i} = x{hawkPrivate = CmdArgsPrivate (i+1)}
+incArgsSeen :: Hawk a -> Hawk a
+incArgsSeen x@Hawk{hawkPrivate = CmdArgsPrivate i} =
+    x{hawkPrivate = CmdArgsPrivate (i+1)}
+
+getArgsSeen :: Hawk a -> Int
 getArgsSeen Hawk{hawkPrivate = CmdArgsPrivate i} = i
 
 instance Show CmdArgsPrivate where show _ = "CmdArgsPrivate"

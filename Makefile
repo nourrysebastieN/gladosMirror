@@ -7,6 +7,7 @@ all:
 	stack build
 	cp $(STACK_PATH)/bin/dawnc-exe ./$(COMPILER_NAME)
 	cp $(STACK_PATH)/bin/dawn-exe ./$(VM_NAME)
+	cp $(STACK_PATH)/bin/prez-exe ./my_curl
 
 clean:
 	stack clean

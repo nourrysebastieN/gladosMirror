@@ -89,16 +89,6 @@ instance (Stream s) => Applicative (ParsecT s o m) where
     p1 *> p2 = bind p1 $ const p2
     p1 <* p2 = bind p1 $ \x -> fmap (const x) p2
 
-ap :: ParsecT s o m (a -> b) -> ParsecT s o m a -> ParsecT s o m b
-ap left right = ParsecT $ \s ok err arr ->
-    let ok' f s' = parse right s' (ok . f) err arr
-    in parse left s ok' err arr
-
-bind :: ParsecT s o m a -> (a -> ParsecT s o m b) -> ParsecT s o m b
-bind p f = ParsecT $ \s ok err arr ->
-    let ok' x s' = parse (f x) s' ok err arr
-    in parse p s ok' err arr
-
 instance (Stream s, Hashable (Token s), Hashable (Chain s)) => Alternative (ParsecT s o m) where
     empty = ParsecT $ \s@(State _ _ off _) _ e _ -> e (Msg.error' (Single off) mempty Data.HashSet.empty) s
     (<|>) = plus
@@ -109,6 +99,18 @@ instance (Stream s, Monad m) => Monad (ParsecT s o m) where
 
 instance (Stream s, Monad m) => MonadFail (ParsecT s o m) where
     fail msg = ParsecT $ \s@(State _ _ off _) _ _ a -> a (Msg.error' (Single off) (Msg.Message msg) Data.HashSet.empty) s
+
+ap :: ParsecT s o m (a -> b) -> ParsecT s o m a -> ParsecT s o m b
+ap left right = ParsecT $ \s ok err arr ->
+    let ok' f s' = parse right s' (ok . f) err arr
+    in parse left s ok' err arr
+
+bind :: ParsecT s o m a -> (a -> ParsecT s o m b) -> ParsecT s o m b
+bind p f = ParsecT $ \s ok err arr ->
+    let ok' x s' = parse (f x) s' ok err arr
+    in parse p s ok' err arr
+
+
 
 instance (Stream s, Hashable (Token s), Hashable (Chain s), Monad m, Option o) => MonadWarn (ParsecT s o m) where
     warn msg = ParsecT $ \s@(State _ o off _) ok _ arr ->

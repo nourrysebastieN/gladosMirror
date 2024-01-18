@@ -30,7 +30,9 @@ instance (Ord i, Hashable i) => Hashable (Reason i) where
 
 instance (Show i) => Show (Reason i) where
     show (Expectation Nothing e) = "expected " <> (stringSet $ toList e)
-    show (Expectation (Just u) e) = "unexpected " <> show u <> ", " <> "expected " <> (stringSet $ toList e)
+    show (Expectation (Just u) e) =
+        "unexpected " <> show u <> ", "
+        <> "expected " <> (stringSet $ toList e)
     show (Message m) = m
 
 stringSet :: (Show i) => [i] -> String
@@ -40,7 +42,8 @@ stringSet (x:[i]) = show x <> " or " <> show i
 stringSet (x:xs) = show x <> ", " <> stringSet xs
 
 merge :: (Ord i) => Reason i -> Reason i -> Reason i
-merge (Expectation u e) (Expectation u' e') = Expectation (liftA2 max u u') (union e e')
+merge (Expectation u e) (Expectation u' e') =
+    Expectation (liftA2 max u u') (union e e')
 merge (Message s) (Message s') = Message (s <> ", " <> s')
 merge m@(Message _) _ = m
 merge _ m@(Message _) = m
