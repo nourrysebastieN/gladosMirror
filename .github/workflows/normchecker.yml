@@ -16,5 +16,4 @@ jobs:
         chmod +x lambdananas
     - name: run lambdananas
       run: |
-        ./lambdananas . > log.txt
-        cat log.txt
+        exit $(test $(./lambdananas . | grep -c MAJOR) -le 5)
