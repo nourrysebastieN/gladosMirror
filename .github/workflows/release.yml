@@ -3,11 +3,14 @@ on:
     branches:
       - main
 jobs:
-  release-on-push:
+  coding-style-checker:
     runs-on: ubuntu-latest
+
+    container:
+      image: epitechcontent/epitest-docker
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: rymndhng/release-on-push-action@master
-        with:
-          bump_version_scheme: minor
+      #     - uses: rymndhng/release-on-push-action@master
+      #  with:
+      #    bump_version_scheme: minor
