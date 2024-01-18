@@ -1,0 +1,18 @@
+on:
+  push:
+    branches:
+      - main
+      - dev
+jobs:
+  release-on-push:
+    runs-on: ubuntu:latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: setting up lambdananas
+      run: |
+        curl -LO https://github.com/Epitech/lambdananas/releases/download/v2.4.3.2/lambdananas
+        chmod +x lambdananas
+    - name: run lambdananas
+      run: |
+        ./lambdananas . > log.txt
+        cat log.txt
