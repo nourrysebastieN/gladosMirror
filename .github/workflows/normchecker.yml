@@ -5,7 +5,9 @@ on:
       - dev
 jobs:
   release-on-push:
-    runs-on: epitechcontent/epitest-docker
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker
     steps:
     - uses: actions/checkout@v2
     - name: setting up lambdananas
