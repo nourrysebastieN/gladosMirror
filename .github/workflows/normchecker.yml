@@ -4,7 +4,7 @@ on:
       - main
       - dev
 jobs:
-  release-on-push:
+  coding-style-checker:
     runs-on: ubuntu-latest
     container:
       image: epitechcontent/epitest-docker
