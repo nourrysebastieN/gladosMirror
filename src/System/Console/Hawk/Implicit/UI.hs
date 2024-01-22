@@ -1,10 +1,10 @@
-{-|
-    This module describes the attributes that can be specified on flags and modes.
-
-    Many attributes have examples specified on the following data type:
-
-    > data Sample = Sample {hello :: String}
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
 -}
+
 module System.Console.Hawk.Implicit.UI where
 
 import System.Console.Hawk.Implicit.Extra

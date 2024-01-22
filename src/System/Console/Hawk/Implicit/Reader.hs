@@ -1,3 +1,10 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
+
 {-# LANGUAGE PatternGuards #-}
 
 module System.Console.Hawk.Implicit.Reader(Reader(..), reader) where

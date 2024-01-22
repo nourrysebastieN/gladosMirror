@@ -30,6 +30,7 @@ data Typee
 
 data Instruction
     = Noop
+    | Invalid
     
     | PushBool
     | PushInt
@@ -155,6 +156,7 @@ instance Enum Instruction where
     fromEnum Not = 0x1f
     fromEnum Xor = 0x20
     fromEnum Show = 0x21
+    fromEnum Invalid = 0xff
 
     toEnum 0x00 = Noop
     toEnum 0x01 = PushBool
@@ -190,6 +192,7 @@ instance Enum Instruction where
     toEnum 0x1f = Not
     toEnum 0x20 = Xor
     toEnum 0x21 = Show
+    toEnum _ = Invalid
 
 add' :: Typee -> Typee -> IO Typee
 add' (Integer a) (Integer b) = pure (Integer (a + b))
@@ -467,6 +470,7 @@ execute' state l = exec h
             Not -> Twillight.not (next 1 state) >>= flip execute' l
             Xor -> xor (next 1 state) >>= flip execute' l
             Show -> Twillight.show (next 1 state) >>= flip execute' l
+            Invalid -> fail "error: Invalid instruction"
 
 dumpB :: [Word8] -> IO [Word8]
 dumpB [] = pure []
@@ -543,10 +547,11 @@ dump' l@(x:xs) = d
             Not -> Prelude.putStrLn "not" >> dump' xs
             Xor -> Prelude.putStrLn "xor" >> dump' xs
             Show -> Prelude.putStrLn "show" >> dump' xs
+            Invalid -> Prelude.putStrLn "unknown" >> dump' xs
 
 checkMagic :: [Word8] -> IO ()
-checkMagic [] = fail "error: Invalid bytecode"
-checkMagic l = when (magic /= (Prelude.take 4 l)) (fail "error: Invalid bytecode")
+checkMagic [] = fail "error: Invalid magic"
+checkMagic l = when (magic /= (Prelude.take 4 l)) (fail "error: Invalid magic")
 
 magic :: [Word8]
 magic = [0x4c, 0xc7, 0x5b, 0x55]

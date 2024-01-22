@@ -18,8 +18,6 @@ import Data.Functor
 
 import Monoparsec
 import qualified Monoparsec.Message as Msg
-import qualified Monoparsec as Monoparser
-import Monoparsec.Debug
 
 import Option
 
@@ -59,6 +57,9 @@ newtype Program = Program [Tok Declaration]
 
 binary :: Parser Char
 binary = like '0' <|> like '1'
+
+a :: Parser Char
+a = binary *> scn *> binary
 
 octal :: Parser Char
 octal = satisfy Data.Char.isOctDigit
@@ -111,27 +112,44 @@ charLiteral = getOffset >>= func
 identifierLiteral :: Parser Literal
 identifierLiteral = Identifier <$> identifier
 
-structLiteral :: Parser Literal
-structLiteral = Structure <$> (tokenize typename) <*> (many parameter)
+structLiteral' :: Parser Literal
+structLiteral' = Structure <$> (tokenize typename) <*> (many parameter)
     where
         parameter = sc *> (tokenize expression)
+
+structLiteral :: Int -> Parser Literal
+structLiteral s =
+    like '('
+    *> sc *> structLiteral'
+    <* sc <* fallback (end s) (like ')')
+    where
+        end s e _ = suggest
+            [Msg.info (Single s) (Message "'(' here")]
+            $ range (Single e) $ fail "missing closing ')'"
 
 oblivion :: Parser Literal
 oblivion = Oblivion <$ (like '_')
 
-literal :: Parser Literal
-literal = integerLiteral <|> booleanLiteral <|> stringLiteral <|> charLiteral <|> identifierLiteral <|> (getOffset >>= func) <|> altStruct <|> oblivion
-    where
-        func s = like '(' *> sc *> structLiteral <* sc <* fallback (end s) (like ')')
+emptyStruct :: Parser Literal
+emptyStruct = Structure <$> (tokenize typename) <*> pure []
 
-        end s e _ = suggest [Msg.info (Single s) (Message "'(' here")] $ range (Single e) $ fail "missing closing ')'"
-        altStruct = Structure <$> (tokenize typename) <*> pure []
+literal :: Parser Literal
+literal = integerLiteral
+    <|> booleanLiteral
+    <|> stringLiteral
+    <|> charLiteral
+    <|> identifierLiteral
+    <|> (getOffset >>= structLiteral)
+    <|> emptyStruct
+    <|> oblivion
 
 typename :: Parser String
-typename = (:) <$> (satisfy Data.Char.isUpper) <*> many (satisfy Data.Char.isAlphaNum <|> like '_')
+typename = (:) <$> (satisfy Data.Char.isUpper)
+    <*> many (satisfy Data.Char.isAlphaNum <|> like '_')
 
 identifier :: Parser String
-identifier = (:) <$> (satisfy Data.Char.isLower) <*> many (satisfy Data.Char.isAlphaNum <|> like '_')
+identifier = (:) <$> (satisfy Data.Char.isLower)
+    <*> many (satisfy Data.Char.isAlphaNum <|> like '_')
 
 endLine :: Parser ()
 endLine = void $ manyUntil (satisfy Data.Char.isSpace) (satisfy (== '\n'))
@@ -205,10 +223,10 @@ function = (Function <$> name) >>= func
         alt [x] = 
             let f (Left _) = pure ([], x) <* scn
                 f (Right _) = ([x],) <$> ret
-            in secure (ahead (sc *> Monoparsec.string "@")) >>= f
+            in secure (ahead (sc *> Monoparsec.string "->")) >>= f
         alt l = (l,) <$> ret
         parameters = (:) <$> (sc *> (tokenize fullType)) <*> many (sc *> like ',' *> sc *> (tokenize fullType))
-        ret = sc *> Monoparsec.string "@" *> sc *> (tokenize fullType) <* scn
+        ret = sc *> Monoparsec.string "->" *> sc *> (tokenize fullType) <* scn
 
 functionEntry :: Int -> Parser FunctionEntry
 functionEntry n =(,) <$> matches <*> result

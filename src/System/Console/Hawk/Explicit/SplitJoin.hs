@@ -1,3 +1,10 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
+
 {-# LANGUAGE RecordWildCards #-}
 module System.Console.Hawk.Explicit.SplitJoin(splitArgs, joinArgs) where
 

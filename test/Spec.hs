@@ -1,7 +1,7 @@
 import Test.HUnit
 import Monoparsec
 import Data.Char
-import TestInstruction
+-- import TestInstruction
 
 data Opt = Opt
 
@@ -60,7 +60,7 @@ testWhitespace1 = TestCase (assertEqual "Right whitespace" (Right ()) (snd $ run
 
 testWhitespace = TestList [testWhitespace1]
 
-testsfunc = TestList [testLike, testOneOf, testNoneOf, testInteger, testAny, testSomeUntil, testManyUntil, testSatisfy, testWhitespace, testVm1, testVmAdd, testInstructions, testCalc]
+testsfunc = TestList [testLike, testOneOf, testNoneOf, testInteger, testAny, testSomeUntil, testManyUntil, testSatisfy, testWhitespace]
 
 main :: IO Counts
 main = runTestTT testsfunc

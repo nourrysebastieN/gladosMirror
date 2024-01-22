@@ -1,3 +1,10 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
+
 {-# LANGUAGE PatternGuards #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 
@@ -130,9 +137,11 @@ prog_ x = err "program" $ show x
 mode_ :: Capture Extra -> [Mode_]
 mode_ (Compose Ignore _) = []
 mode_ (Compose a b) = map (modeAnn a) $ mode_ b
-mode_ o@(Ctor x ys) = [withMode def{modeFlags_=flgs} $ \x -> x{modeValue=embed $ fixup $ fromCapture o}]
+mode_ o@(Ctor x ys) = [
+        withMode def{modeFlags_=flgs} f]
     where flgs = concat $ zipWith flag_ (fields x) ys
           fixup x = foldl (\x (Fixup f) -> f x) x $ map flagFixup flgs
+          f x = x{modeValue=embed $ fixup $ fromCapture o}
 mode_ x = err "mode" $ show x
 
 flag_ :: String -> Capture Extra -> [Flag_]

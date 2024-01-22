@@ -1,42 +1,11 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-
-Sample renderings:
-
-Program description
-
-programname [OPTIONS] FILE1 FILE2 [FILES]
-  Program to perform some action
-
-  -f
-Flag grouping:
-  -a
-
-Program description
-
-programname [COMMAND] [OPTIONS] ...
-  Program to perform some action
-
-Commands:
-  [build]  Build action here
-  test     Test action here
-
-Flags:
-  -s
-Common flags:
-  -?
-
-Program description
-
-programname [COMMAND] [OPTIONS] ...
-  Program to perform some action
-
-  -s
-Common flags:
-  -?
-
-programname [build] [OPTIONS] [FILES}
-  Action to perform here
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
 -}
+
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module System.Console.Hawk.Explicit.Help(HelpFormat(..), helpText) where
 

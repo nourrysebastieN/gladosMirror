@@ -1,3 +1,9 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -121,6 +127,79 @@ addSuggestion :: (Ord (Token s), Ord (Chain s), Hashable (Token s), Hashable (Ch
 addSuggestion (Msg t ra re sug) sug' =
     Msg t ra re (Data.HashSet.insert sug' sug)
 
+putColorStr :: Color -> String -> IO ()
+putColorStr c s =
+    setSGR [SetColor Foreground Vivid c]
+    *> putStr s
+    *> setSGR [Reset]
+
+_range :: Range -> Int
+_range (Single n) = n
+_range (Range s _) = s
+_range (RangeSingle _ _ n) = n
+_range (All n) = n
+
+lineData :: Range -> String -> (String,Int,Int)
+lineData ra input = (_line, (length . fromJust) _begin, length __begin)
+    where
+        _data = takeN (_range ra) input
+        _begin = (Monoparsec.Misc.lines . fst) <$> _data
+        _end = (Monoparsec.Misc.lines . snd) <$> _data
+        __begin = fromMaybe "" (snd <$> (unsnoc =<< _begin))
+        _line =
+            fromMaybe "" (snd <$> (unsnoc =<< _begin))
+            <> fromMaybe "" (fst <$> (uncons =<< _end))
+
+preLine :: (String,Int,Int) -> String
+preLine (_,l,_) = "  " <> (show l) <> " | "
+
+line :: Type -> Range -> (String,Int,Int) -> IO ()
+
+line t (Single _) (_line,_lineNumber,_columnNumber) =
+    (putStr (Data.List.take _columnNumber _line))
+    *> putColorStr (color t)
+        (Data.List.take 1 (Data.List.drop _columnNumber _line))
+    *> putStrLn (Data.List.drop (_columnNumber + 1) _line)
+
+line t (Range s e) (_line,_lineNumber,_columnNumber) =
+    (putStr (Data.List.take _columnNumber _line))
+    *> putColorStr (color t)
+        (Data.List.take (e - s + 1)
+            (Data.List.drop _columnNumber _line))
+    *> putStrLn (Data.List.drop (_columnNumber + (e - s + 1)) _line)
+
+line t (All n) (_line,_lineNumber,_columnNumber) =
+    putColorStr (color t) _line
+
+line t (RangeSingle s e n) (_line,_lineNumber,_columnNumber) =
+    (putStr (Data.List.take (_columnNumber - (n - s)) _line))
+    *> putColorStr (color t)
+        (Data.List.take (e - s + 1)
+            (Data.List.drop (_columnNumber - (n - s)) _line))
+    *> putStrLn
+        (Data.List.drop ((_columnNumber - (n - s)) + (e - s)) _line)
+
+file :: String -> (String,Int,Int) -> String
+file f (_,l,c) =  f <> ":" <> (show l) <> ":" <> (show c) <> ": "
+
+columnHead :: Int -> String
+columnHead n = "  " <> replicate ((length . show) n) ' ' <> " | "
+
+_column :: Range -> (String,Int,Int) -> String
+_column (Single _) (_,_,c) = replicate c ' ' <> "^"
+_column (Range s e) (_,_,c) =
+    replicate c ' ' <> replicate (e - s + 1) '~'
+_column (RangeSingle s e n) (_,_,c) =
+    drop (n - s) (replicate c ' ')
+    <> replicate (n - s) '~' <> "^" <> replicate (e - n) '~'
+_column (All _) _ = ""
+
+column :: Type -> Range -> (String,Int,Int) -> IO ()
+column t ra tu@(_,l,c) =
+    putStr (columnHead l)
+    *> putColorStr (color t) (_column ra tu)
+    *> putStrLn ""
+
 displayMessage :: (Show (Token s), Show (Chain s)) =>
     String ->
     String ->
@@ -135,83 +214,15 @@ displayMessage file input (Msg t Empty re sug) =
         _func io sug = io <> (displayMessage file input sug)
 
         header = file <> ": "
-        typ =
-            setSGR [SetColor Foreground Vivid (color t)]
-            *> putStr (show t)
-            *> setSGR [Reset]
+        typ = putColorStr (color t) (show t)
 
-displayMessage file input (Msg t ra re sug) =
-    putStr header
-    *> typ
+displayMessage f input (Msg t ra re sug) =
+    putStr (file f dat)
+    *> putColorStr (color t) (show t)
     *> putStrLn (show re)
-    *> putStr lineInfo
-    *> (line ra)
-    *> printColumnInfo
+    *> putStr (preLine dat) *> (line t ra dat)
+    *> (column t ra dat)
     *> Data.Foldable.foldl _func (pure ()) sug
     where
-        _func io sug = io <> (displayMessage file input sug)
-
-        _range (Single n) = n
-        _range (Range s _) = s
-        _range (RangeSingle _ _ n) = n
-        _range (All n) = n
-        
-        _data = takeN (_range ra) input
-        _begin = (Monoparsec.Misc.lines . fst) <$> _data
-        _end = (Monoparsec.Misc.lines . snd) <$> _data
-        __begin = fromMaybe "" (snd <$> (unsnoc =<< _begin))
-        _line =
-            fromMaybe "" (snd <$> (unsnoc =<< _begin))
-            <> fromMaybe "" (fst <$> (uncons =<< _end))
-        
-        _lineNumber = (show . length) _begin
-        _columnNumber = length __begin
-
-        header =
-            file <> ":" <> _lineNumber <> ":" <> (show _columnNumber) <> ": "
-        typ =
-            setSGR [SetColor Foreground Vivid (color t)]
-            *> putStr (show t)
-            *> setSGR [Reset]
-        lineInfo = "  " <> _lineNumber <> " | "
-        
-        line (Single _) =
-            (putStr (Data.List.take _columnNumber _line))
-            *> setSGR [SetColor Foreground Vivid (color t)]
-            *> putStr (Data.List.take 1 (Data.List.drop _columnNumber _line))
-            *> setSGR [Reset]
-            *> putStrLn (Data.List.drop (_columnNumber + 1) _line)
-        line (Range s e) =
-            (putStr (Data.List.take _columnNumber _line))
-            *> setSGR [SetColor Foreground Vivid (color t)]
-            *> putStr (Data.List.take (e - s + 1)
-                (Data.List.drop _columnNumber _line))
-            *> setSGR [Reset]
-            *> putStrLn (Data.List.drop (_columnNumber + (e - s + 1)) _line)
-        line (All n) =
-            setSGR [SetColor Foreground Vivid (color t)]
-            *> putStrLn _line
-            *> setSGR [Reset]
-        line (RangeSingle s e n) =
-            (putStr (Data.List.take (_columnNumber - (n - s)) _line))
-            *> setSGR [SetColor Foreground Vivid (color t)]
-            *> putStr (Data.List.take (e - s)
-                (Data.List.drop (_columnNumber - (n - s)) _line))
-            *> setSGR [Reset]
-            *> putStrLn
-                (Data.List.drop ((_columnNumber - (n - s)) + (e - s)) _line)
-        
-        columnInfoHeader = "  " <> replicate (length _lineNumber) ' ' <> " | "
-        
-        columnInfo (Single n) = replicate (_columnNumber) ' ' <> "^"
-        columnInfo (Range s e) =
-            replicate (_columnNumber) ' ' <> replicate (e - s + 1) '~'
-        columnInfo (RangeSingle s e n) =
-            drop (n - s) (replicate (_columnNumber) ' ')
-            <> replicate (n - s) '~' <> "^" <> replicate (e - n) '~'
-        columnInfo (All n) = ""
-        
-        printColumnInfo =
-            putStr columnInfoHeader
-            *> setSGR [SetColor Foreground Vivid (color t)]
-            *> putStrLn (columnInfo ra) *> setSGR [Reset]
+        _func io sug = io <> (displayMessage f input sug)
+        dat = lineData ra input

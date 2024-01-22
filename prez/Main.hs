@@ -1,3 +1,9 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
 
 {-# LANGUAGE DeriveDataTypeable #-}
 
@@ -16,24 +22,11 @@ data Option =
 option :: Annotate Extra
 option = build (Option {})
     [
-        url :!
-            def
-            ! argPos 0
-            ! typ "URL"
-        , method :!
-            "GET"
-            ! explicit
-            ! name "method"
-            ! help "HTTP method"
-            ! typ "method"
-        , body :!
-            def
-            ! explicit
-            ! name "body"
-            ! help "HTTP body"
-            ! typ "body"
-    ]
-    ! program "my_curl"
+        url :! def ! argPos 0 ! typ "URL"
+        , method :! "GET" ! explicit ! name "method"
+            ! help "HTTP method" ! typ "method"
+        , body :! def ! explicit ! name "body" ! help "HTTP body" ! typ "body"
+    ] ! program "my_curl"
     ! summary "my_curl v1.0.0 (C) Agakistune"
 
 main :: IO ()

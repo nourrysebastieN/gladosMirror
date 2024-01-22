@@ -1,3 +1,9 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
 
 module Lisp
 (
@@ -182,30 +188,17 @@ procedure =
 lambda :: StringParser ([String], [Expression])
 lambda = label "procedure" $ (,) <$> (wrap arg) <*> (some $ lexeme expression)
 
-symbol :: StringParser Char
-symbol = oneOf "!$%&*/:<=>?~_^"
-
-operator :: StringParser String
-operator = some symbol
-
-operation :: StringParser (Int,String,Int)
-operation = (,,,) <$> integer <*> operator <*> integer
-
 expression :: StringParser Expression
 expression = cexpr <|> vexpr <|> lamb <|> cond <|> callexpr
     where
         cexpr = ConstantExpression <$> constant
         vexpr = VariableExpression <$> identifier
-        callexpr =
-            wrap $ CallExpresssion
-            <$> (lexeme expression)
+        callexpr = wrap $ CallExpresssion <$> (lexeme expression)
             <*> many (lexeme expression)
         lamb = wrap $ (lexeme (string "lambda")) *> (uncurry Lambda <$> lambda)
-        cond = 
-            wrap $ If
+        cond =  wrap $ If
             <$> ((lexeme (string "if")) *> (lexeme expression))
-            <*> (lexeme expression)
-            <*> (lexeme expression)
+            <*> (lexeme expression) <*> (lexeme expression)
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (a, b, c) = f a b c
@@ -213,17 +206,11 @@ uncurry3 f (a, b, c) = f a b c
 _definition :: StringParser Definition
 _definition = var <|> pro
     where
-        var =
-            promote
-            <$> (lexeme (string "define") *> identifier)
-            <*> (lexeme expression)
-        pro =
-            cast
-            <$> (
+        var = promote
+            <$> (lexeme (string "define") *> identifier)<*> (lexeme expression)
+        pro = cast <$> (
                 lexeme (string "define")
-                *> (lexeme (uncurry3 Procedure <$> procedure))
-                )
-        
+                *> (lexeme (uncurry3 Procedure <$> procedure)))
         cast p@(Procedure n _ _) = Var n p
         promote n (Lambda a body) = Var n (Procedure n a body)
         promote n e = Var n e
@@ -247,25 +234,18 @@ builtinEq lst s =
     <*> (collect (lst!!1) s))
 
 builtinLower :: [Expression] -> LispState -> IO Expression
-builtinLower lst s =
-    low
-    <$> (collect (lst!!0) s >>= convert)
+builtinLower lst s = low <$> (collect (lst!!0) s >>= convert)
     <*> (collect (lst!!1) s >>= convert)
     where
         low (ConstantExpression (Number a)) (ConstantExpression (Number b)) =
             (ConstantExpression . Boolean) $ a < b
-        convert c@(ConstantExpression (Boolean True)) =
-            fail $ show c <> " is not a real number"
-        convert c@(ConstantExpression (Boolean False)) =
+        convert c@(ConstantExpression (Boolean _)) =
             fail $ show c <> " is not a real number"
         convert c@(ConstantExpression _) = pure c
-        convert p@(Procedure _ _ _) = fail $ show p <> " is not a real number"
-        convert b@(Builtin _ _ _) = fail $ show b <> " is not a real number"
+        convert d = fail $ show d <> " is not a real number"
 
 builtinAdd :: [Expression] -> LispState -> IO Expression
-builtinAdd lst s =
-    add
-    <$> (collect (lst!!0) s >>= convert)
+builtinAdd lst s = add <$> (collect (lst!!0) s >>= convert)
     <*> (collect (lst!!1) s >>= convert)
     where
         add (ConstantExpression (Number a)) (ConstantExpression (Number b)) =
@@ -273,13 +253,10 @@ builtinAdd lst s =
         convert c@(ConstantExpression (Boolean _)) =
             fail $ show c <> " is not a number"
         convert c@(ConstantExpression _) = pure c
-        convert p@(Procedure _ _ _) = fail $ show p <> " is not a number"
-        convert b@(Builtin _ _ _) = fail $ show b <> " is not a number"
+        convert p = fail $ show p <> " is not a number"
 
 builtinSub :: [Expression] -> LispState -> IO Expression
-builtinSub lst s =
-    sub
-    <$> (collect (lst!!0) s >>= convert)
+builtinSub lst s = sub <$> (collect (lst!!0) s >>= convert)
     <*> (collect (lst!!1) s >>= convert)
     where
         sub (ConstantExpression (Number a)) (ConstantExpression (Number b)) =
@@ -287,13 +264,10 @@ builtinSub lst s =
         convert c@(ConstantExpression (Boolean _)) =
             fail $ show c <> " is not a number"
         convert c@(ConstantExpression _) = pure c
-        convert p@(Procedure _ _ _) = fail $ show p <> " is not a number"
-        convert b@(Builtin _ _ _) = fail $ show b <> " is not a number"
+        convert d = fail $ show d <> " is not a number"
 
 builtinMul :: [Expression] -> LispState -> IO Expression
-builtinMul lst s =
-    mul
-    <$> (collect (lst!!0) s >>= convert)
+builtinMul lst s = mul <$> (collect (lst!!0) s >>= convert)
     <*> (collect (lst!!1) s >>= convert)
     where
         mul (ConstantExpression (Number a)) (ConstantExpression (Number b)) =
@@ -301,40 +275,30 @@ builtinMul lst s =
         convert c@(ConstantExpression (Boolean _)) =
             fail $ show c <> " is not a number"
         convert c@(ConstantExpression _) = pure c
-        convert p@(Procedure _ _ _) = fail $ show p <> " is not a number"
-        convert b@(Builtin _ _ _) = fail $ show b <> " is not a number"
+        convert p = fail $ show p <> " is not a number"
 
 builtinDiv :: [Expression] -> LispState -> IO Expression
-builtinDiv lst s =
-    di
-    <$> (collect (lst!!0) s >>= convert)
+builtinDiv lst s = di <$> (collect (lst!!0) s >>= convert)
     <*> (collect (lst!!1) s >>= convert >>= pass)
     where
         di (ConstantExpression (Number a)) (ConstantExpression (Number b)) =
             (ConstantExpression . Number) $ div a b
-        convert c@(ConstantExpression (Boolean _)) =
-            fail $ show c <> " is not a number"
-        convert c@(ConstantExpression _) = pure c
-        convert p@(Procedure _ _ _) = fail $ show p <> " is not a number"
-        convert b@(Builtin _ _ _) = fail $ show b <> " is not a number"
-        pass (ConstantExpression (Number 0)) = fail "undefined for 0"
-        pass c@(ConstantExpression (Number n)) = pure c
+        convert c@(ConstantExpression (Number _)) = pure c
+        convert p = fail $ show p <> " is not a number"
+        pass c@(ConstantExpression (Number n)) =
+            (guard (n == 0) >> pure c) <|> fail "undefined for 0"
 
 builtinMod :: [Expression] -> LispState -> IO Expression
-builtinMod lst s = 
-    mo 
-    <$> (collect (lst!!0) s >>= convert)
+builtinMod lst s =  mo <$> (collect (lst!!0) s >>= convert)
     <*> (collect (lst!!1) s >>= convert >>= pass)
     where
         mo (ConstantExpression (Number a)) (ConstantExpression (Number b)) =
             (ConstantExpression . Number) $ mod a b
-        convert c@(ConstantExpression (Boolean _)) =
-            fail $ show c <> " is not a number"
+        convert c@(ConstantExpression (Number n)) = pure c
         convert c@(ConstantExpression _) = pure c
-        convert p@(Procedure _ _ _) = fail $ show p <> " is not a number"
-        convert b@(Builtin _ _ _) = fail $ show b <> " is not a number"
-        pass (ConstantExpression (Number 0)) = fail "undefined for 0"
-        pass c@(ConstantExpression (Number _)) = pure c
+        convert p = fail $ show p <> " is not a number"
+        pass c@(ConstantExpression (Number n)) =
+            (guard (n == 0) >> pure c) <|> fail "undefined for 0"
 
 defaultState :: LispState
 defaultState = LispState [
@@ -354,16 +318,13 @@ test (CallExpresssion e args) s = eval =<< (collect e s)
     where
         eval (Procedure _ a body) = 
             (evaluateBody body =<< generateProcedureScope (zip a args) s)
-            >>= sink
-        eval (Builtin _ narg func) =
-            guard (length args == narg)
-            *> ((\ex -> collect ex s) =<< (func args s))  >>= sink
+            >>= (\ex -> Lisp.test ex s)
         eval (Lambda a body) =
             (evaluateBody body =<< generateProcedureScope (zip a args) s)
-            >>= sink
+            >>= (\ex -> Lisp.test ex s)
+        eval (Builtin _ narg func) = guard (length args == narg)
+            *>((\ex -> collect ex s)=<<(func args s))>>= (\e -> Lisp.test e s)
         eval ex = fail $ "attempt to apply non-procedure " <> show ex
-
-        sink ex = Lisp.test ex s
 test e _ = print e *> pure True
 
 collect :: Expression -> LispState -> IO Expression
@@ -425,20 +386,13 @@ evaluateExpressionInBody (VariableExpression n) s@(LispState defs) =
 evaluateExpressionInBody (CallExpresssion e args) s@(LispState _) =
     eval =<< (collect e s)
     where
-        eval (Procedure _ a body) =
-            (
-                evaluateBody body
-                =<< generateProcedureScope (zip a args) s
-            ) *> pure s
-        eval (Builtin _ narg func) =
-            guard (length args == narg)
+        eval (Procedure _ a body) = (evaluateBody body
+                =<< generateProcedureScope (zip a args) s) *> pure s
+        eval (Builtin _ narg func) = guard (length args == narg)
             *> ((\ex -> evaluateExpressionInBody ex s) =<< (func args s))
             *> pure s
-        eval (Lambda a body) =
-            (
-                evaluateBody body
-                =<< generateProcedureScope (zip a args) s
-            ) *> pure s
+        eval (Lambda a body) = (evaluateBody body
+                =<< generateProcedureScope (zip a args) s) *> pure s
         eval ex = fail $ "attempt to apply non-procedure " <> show ex
 evaluateExpressionInBody _ s = pure s
 
@@ -453,16 +407,13 @@ evaluateExpression (VariableExpression n) s@(LispState defs) =
 evaluateExpression (CallExpresssion e args) s@(LispState _) =
     eval =<< (collect e s)
     where
-        eval (Procedure _ a body) =
-            (
+        eval (Procedure _ a body) =(
                 (evaluateBody body =<< generateProcedureScope (zip a args) s)
                 >>= print
             ) *> pure s
-        eval (Builtin _ narg func) =
-            guard (length args == narg)
+        eval (Builtin _ narg func) = guard (length args == narg)
             *> ((\ex -> evaluateExpression ex s) =<< (func args s)) *> pure s
-        eval (Lambda a body) = 
-            (
+        eval (Lambda a body) = (
                 (evaluateBody body =<< generateProcedureScope (zip a args) s)
                 >>= print
             ) *> pure s
@@ -493,39 +444,35 @@ lispFileInterpreter =
         result (Right forms) = () <$ lispInterpreter forms defaultState
         result (Left es) = (putStrLn . show) es
 
+queryLine :: Bool -> LispState -> String -> IO LispState
+queryLine True state ":quit" = _lispCLI False state
+queryLine True state ":q" = _lispCLI False state
+queryLine False state ":debug" = _lispCLI True state
+queryLine False state ":d" = _lispCLI True state
+queryLine d state l = ((result d state) . snd) $ runParse lispParse l
+
+result :: Bool -> LispState -> Either [Message String] [Form] -> IO LispState
+result debug state (Right forms) =
+    (guard debug >> r) <|> l
+    where
+        r = putStrLn (intercalate "   " (map (\e -> display e 0) forms))
+            >> (_lispCLI True =<< handle =<< (exec forms))
+        l = _lispCLI False =<< handle =<< (exec forms)
+result debug state (Left es) = _lispCLI debug state <* (putStrLn . show) es
+
+handle :: LispState -> Either SomeException LispState -> IO LispState
+handle state (Left e) = print e *> pure state
+handle state (Right s) = pure s
+
+exec :: LispState -> [Form] -> IO (Either SomeException LispState)
+exec state forms = Control.Exception.try $
+    lispInterpreter forms state
+
 _lispCLI :: Bool -> LispState -> IO LispState
 _lispCLI True state =
         putStr "debug> " *> (hFlush stdout) *> (getLine >>= queryLine)
-    where
-        queryLine ":quit" = _lispCLI False state
-        queryLine ":q" = _lispCLI False state
-        queryLine l = (result . snd) $ runParse lispParse l
-
-        result (Right forms) =
-            putStrLn (intercalate "   " (map (\e -> display e 0) forms))
-            *> (_lispCLI True =<< handle =<< (exec forms))
-        result (Left es) = _lispCLI True state <* (putStrLn . show) es
-
-        exec forms = Control.Exception.try $
-            lispInterpreter forms state :: IO (Either SomeException LispState)
-
-        handle (Left e) = print e *> pure state
-        handle (Right s) = pure s
 _lispCLI False state =
     putStr "> " *> (hFlush stdout) *> (getLine >>= queryLine)
-    where
-        queryLine ":debug" = _lispCLI True state
-        queryLine ":d" = _lispCLI True state
-        queryLine l = (result . snd) $ runParse lispParse l
-
-        result (Right forms) = _lispCLI False =<< handle =<< (exec forms)
-        result (Left es) = _lispCLI False state <* (putStrLn . show) es
-
-        exec forms = Control.Exception.try $
-            lispInterpreter forms state :: IO (Either SomeException LispState)
-
-        handle (Left e) = print e *> pure state
-        handle (Right s) = pure s
 
 lispCLI :: IO ()
 lispCLI = (() <$ _lispCLI False defaultState) <|> (putStrLn "")
