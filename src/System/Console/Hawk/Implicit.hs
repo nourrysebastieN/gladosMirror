@@ -118,6 +118,4 @@ hawkApply :: Hawk a -> IO a
 hawkApply Hawk{..}
     | Just x <- hawkHelp = do putStr x; exitSuccess
     | Just x <- hawkVersion = do putStr x; exitSuccess
-    | otherwise = do
-        maybe (return ()) setVerbosity hawkVerbosity
-        return hawkValue
+    | otherwise = return hawkValue

@@ -1,47 +1,16 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-
-Sample renderings:
-
-Program description
-
-programname [OPTIONS] FILE1 FILE2 [FILES]
-  Program to perform some action
-
-  -f
-Flag grouping:
-  -a
-
-Program description
-
-programname [COMMAND] [OPTIONS] ...
-  Program to perform some action
-
-Commands:
-  [build]  Build action here
-  test     Test action here
-
-Flags:
-  -s
-Common flags:
-  -?
-
-Program description
-
-programname [COMMAND] [OPTIONS] ...
-  Program to perform some action
-
-  -s
-Common flags:
-  -?
-
-programname [build] [OPTIONS] [FILES}
-  Action to perform here
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
 -}
+
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module System.Console.Hawk.Explicit.Help(HelpFormat(..), helpText) where
 
 import System.Console.Hawk.Explicit.Type
-import System.Console.Hawk.Explicit.Complete
+-- import System.Console.Hawk.Explicit.Complete
 import System.Console.Hawk.Text
 import System.Console.Hawk.Default
 import Data.List
@@ -51,8 +20,8 @@ data HelpFormat
     = HelpFormatDefault
     | HelpFormatOne
     | HelpFormatAll
-    | HelpFormatBash
-    | HelpFormatZsh
+    -- | HelpFormatBash
+    -- | HelpFormatZsh
       deriving (Read,Show,Enum,Bounded,Eq,Ord)
 
 instance Default HelpFormat where def = HelpFormatDefault
@@ -70,12 +39,11 @@ helpText :: [String] -> HelpFormat -> Mode a -> [Text]
 helpText pre HelpFormatDefault x = helpPrefix pre ++ helpTextDefault x
 helpText pre HelpFormatOne x = helpPrefix pre ++ helpTextOne x
 helpText pre HelpFormatAll x = helpPrefix pre ++ helpTextAll x
-helpText pre HelpFormatBash x = map Line $ completeBash $ head $ modeNames x ++ ["unknown"]
-helpText pre HelpFormatZsh x = map Line $ completeZsh $ head $ modeNames x ++ ["unknown"]
 
 helpPrefix :: [String] -> [Text]
 helpPrefix xs = map Line xs ++ [Line "" | not $ null xs]
 
+helpTextDefault :: Mode a -> [Text]
 helpTextDefault x = if length all > 40 then one else all
     where all = helpTextAll x
           one = helpTextOne x
@@ -83,7 +51,9 @@ helpTextDefault x = if length all > 40 then one else all
 helpTextAll :: Mode a -> [Text]
 helpTextAll = disp . push ""
     where
-        disp m = uncurry (++) (helpTextMode m) ++ concatMap (\x -> Line "" : disp x) (modeModes m)
+        disp m =
+            uncurry (++) (helpTextMode m)
+            ++ concatMap (\x -> Line "" : disp x) (modeModes m)
         push s m = m{modeNames = map (s++) $ modeNames m
                     ,modeGroupModes = fmap (push s2) $ modeGroupModes m}
             where s2 = s ++ concat (take 1 $ modeNames m) ++ " "
@@ -92,7 +62,10 @@ helpTextOne :: Mode a -> [Text]
 helpTextOne m = pre ++ ms ++ suf
     where
         (pre,suf) = helpTextMode m
-        ms = space $ [Line "Commands:" | not $ null $ groupUnnamed $ modeGroupModes m] ++ helpGroup f (modeGroupModes m)
+        ms = 
+            space
+            $ [Line "Commands:" | not $ null $ groupUnnamed $ modeGroupModes m]
+            ++ helpGroup f (modeGroupModes m)
         f m = return $ cols [concat $ take 1 $ modeNames m, ' ' : modeHelp m]
 
 helpTextMode :: Mode a -> ([Text], [Text])
@@ -113,12 +86,23 @@ helpGroup f xs = concatMap f (groupUnnamed xs) ++ concatMap g (groupNamed xs)
     where g (a,b) = Line (a ++ ":") : concatMap f b
 
 helpArgs :: ([Arg a], Maybe (Arg a)) -> [String]
-helpArgs (ys,y) = [['['|o] ++ argType x ++ [']'|o] | (i,x) <- zip [0..] xs, let o = False && req <= i]
-    where xs = ys ++ maybeToList y
-          req = maximum $ 0 : [i | (i,x) <- zip [1..] xs, argRequire x]
+helpArgs (ys,y) =
+    [
+        ['['|o]
+        ++ argType x
+        ++ [']'|o] | (i,x) <- zip [0..] xs, let o = False && req <= i]
+    where
+        xs = ys ++ maybeToList y
+        req = maximum $ 0 : [i | (i,x) <- zip [1..] xs, argRequire x]
 
 helpFlag :: Flag a -> [Text]
-helpFlag x = [cols [unwords $ map ("-"++) a2, unwords $ map ("--"++) b2, ' ' : flagHelp x]]
+helpFlag x =
+    [cols [
+        unwords $ map ("-"++) a2
+        , unwords $ map ("--"++) b2
+        , ' ' : flagHelp x
+        ]
+    ]
         where
             (a,b) = partition ((==) 1 . length) $ flagNames x
             (a2,b2) = if null b then (add a opt, b) else (a, add b opt)
@@ -129,9 +113,17 @@ helpFlag x = [cols [unwords $ map ("-"++) a2, unwords $ map ("--"++) b2, ' ' : f
                 FlagOpt x -> "[=" ++ hlp ++ "]"
                 _ -> ""
 
+cols :: [String] -> Text
 cols (x:xs) = Cols $ ("  "++x) : map (' ':) xs
+
+space :: [Text] -> [Text]
 space xs = [Line "" | not $ null xs] ++ xs
 
+nullGroup :: Group a -> Bool
 nullGroup x = null (groupUnnamed x) && null (groupNamed x)
+
+notNullGroup :: Group a -> Bool
 notNullGroup = not . nullGroup
+
+mixedGroup :: Group a -> Bool
 mixedGroup x = not $ null (groupUnnamed x) || null (groupNamed x)

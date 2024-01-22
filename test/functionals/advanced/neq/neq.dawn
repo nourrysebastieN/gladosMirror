@@ -1,0 +1,4 @@
+main - IO
+main {
+    = print (neq 2 2)
+}

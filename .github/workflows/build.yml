@@ -54,6 +54,8 @@ jobs:
       - name: Run tests
         run: |
           stack test
+          chmod +x functional-tests.sh
+          ./functional-tests.sh
 
 
 #     - name: Upload artifact

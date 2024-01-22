@@ -1,3 +1,9 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
 
 {-# LANGUAGE DeriveDataTypeable #-}
 
@@ -13,7 +19,9 @@ data CompilerOption = Option {
         ast :: Bool,
         assembly :: Bool,
 
-        werror :: Bool
+        werror :: Bool,
+        output :: Maybe String,
+        test :: Bool
     } deriving (Show, Data, Typeable)
 
 instance Option CompilerOption where
@@ -23,6 +31,8 @@ instance Option CompilerOption where
         ast = False,
         assembly = False,
 
-        werror = False
+        werror = False,
+        output = Nothing,
+        test = False
     }
     warnOpt opt msg = if werror opt then Left msg else Right msg

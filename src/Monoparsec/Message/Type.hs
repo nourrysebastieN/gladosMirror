@@ -1,3 +1,9 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
 
 module Monoparsec.Message.Type (
     Type(..),

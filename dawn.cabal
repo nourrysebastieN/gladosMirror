@@ -32,7 +32,6 @@ library
       Monoparsec.Message
       Monoparsec.Debug
       System.Console.Hawk
-      Instructions
       Dawn
       Dusk
       Twillight
@@ -121,6 +120,32 @@ executable dawnc-exe
       Paths_dawn
   hs-source-dirs:
       dawnc-app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      ansi-terminal
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , dawn
+    , directory
+    , filepath
+    , ghc
+    , hashable
+    , monadplus
+    , process
+    , text
+    , transformers
+    , unordered-containers
+  default-language: Haskell2010
+
+executable prez-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_dawn
+  autogen-modules:
+      Paths_dawn
+  hs-source-dirs:
+      prez
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       ansi-terminal

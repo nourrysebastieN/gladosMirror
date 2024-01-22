@@ -1,3 +1,10 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
+
 {-# LANGUAGE PatternGuards #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 
@@ -34,12 +41,19 @@ data Prog_ = Prog_
 instance Default Prog_ where
     def = Prog_ def def def def def (Just def) (Just def) def
 
+progOutput :: (Prog_ -> Maybe Builtin_) -> Prog_ -> [String]
 progOutput f x = fromMaybe ["The " ++ progProgram x ++ " program"] $
     (builtinSummary =<< f x) `mplus` progSummary x
 
+progHelpOutput :: Prog_ -> [String]
 progHelpOutput = progOutput progHelpArg
+
+progVersionOutput :: Prog_ -> [String]
 progVersionOutput = progOutput progVersionArg
-progNumericVersionOutput x = fmap return $ parseVersion =<< listToMaybe (progVersionOutput x)
+
+progNumericVersionOutput :: Monad m => Prog_ -> Maybe (m String)
+progNumericVersionOutput x =
+    fmap return $ parseVersion =<< listToMaybe (progVersionOutput x)
 
 parseVersion :: String -> Maybe String
 parseVersion xs = listToMaybe
@@ -91,14 +105,23 @@ newtype Fixup = Fixup (Any -> Any)
 instance Default Fixup where def = Fixup id
 instance Show Fixup where show _ = "Fixup"
 
+isFlag_ :: Flag_ -> Bool
 isFlag_ Flag_{} = True
 isFlag_ _ = False
 
+withMode :: Mode_ -> (Mode (Hawk Any) -> Mode (Hawk Any)) -> Mode_
 withMode x f = x{modeMode = f $ modeMode x}
+
+withFlagArg :: Flag_ -> (Arg (Hawk Any) -> Arg (Hawk Any)) -> Flag_
 withFlagArg x f = x{flagArg_ = f $ flagArg_ x}
+
+withFlagFlag :: Flag_ -> (Flag (Hawk Any) -> Flag (Hawk Any)) -> Flag_
 withFlagFlag x f = x{flagFlag = f $ flagFlag x}
 
+err :: String -> String -> a
 err x y = error $ "System.Console.Hawk.Implicit, unexpected " ++ x ++ ": " ++ y
+
+errFlag :: String -> String -> a
 errFlag x y = err ("flag (" ++ x ++ ")") y
 
 local :: Capture Extra -> Prog_
@@ -114,15 +137,19 @@ prog_ x = err "program" $ show x
 mode_ :: Capture Extra -> [Mode_]
 mode_ (Compose Ignore _) = []
 mode_ (Compose a b) = map (modeAnn a) $ mode_ b
-mode_ o@(Ctor x ys) = [withMode def{modeFlags_=flgs} $ \x -> x{modeValue=embed $ fixup $ fromCapture o}]
+mode_ o@(Ctor x ys) = [
+        withMode def{modeFlags_=flgs} f]
     where flgs = concat $ zipWith flag_ (fields x) ys
           fixup x = foldl (\x (Fixup f) -> f x) x $ map flagFixup flgs
+          f x = x{modeValue=embed $ fixup $ fromCapture o}
 mode_ x = err "mode" $ show x
 
 flag_ :: String -> Capture Extra -> [Flag_]
 flag_ name (Compose Ignore _) = []
 flag_ name (Compose a b) = map (flagAnn a) $ flag_ name b
-flag_ name (Value x) = let (fix,flg) = value_ name x in [def{flagField=name, flagFlag=remap embed reembed flg, flagFixup=fix}]
+flag_ name (Value x) =
+    let (fix,flg) = value_ name x
+    in [def{flagField=name, flagFlag=remap embed reembed flg, flagFixup=fix}]
 flag_ name x@Ctor{} = flag_ name $ Value $ fromCapture x
 -- flag_ name (Many xs) = concatMap (enum_ name) xs
 flag_ name x = errFlag name $ show x
@@ -130,8 +157,14 @@ flag_ name x = errFlag name $ show x
 enum_ :: String -> Capture Extra -> [Flag_]
 enum_ name (Compose Ignore _) = []
 enum_ name (Compose a b) = map (flagAnn a) $ enum_ name b
-enum_ name (Value x) = [def{flagField=name, flagFlag = flagNone [] (fmap upd) "", flagEnum=Just $ ctor x}]
-    where upd v | not (A.isString x) && A.isList x = setField (name, getField name v `A.append` x) v
+enum_ name (Value x) = [
+        def{
+            flagField=name
+            , flagFlag = flagNone [] (fmap upd) ""
+            , flagEnum=Just $ ctor x}
+        ]
+    where upd v | not (A.isString x) && A.isList x =
+                    setField (name, getField name v `A.append` x) v
                 | otherwise = setField (name,x) v
 enum_ name x@Ctor{} = enum_ name $ Value $ fromCapture x
 enum_ name x = errFlag name $ show x
@@ -141,15 +174,18 @@ value_ name x
     | isNothing mty = errFlag name $ show x
     | readerBool ty =
         let f (Right x) = x
-            upd b x = setField (name, f $ readerRead ty (getField name x) $ show b) x
+            upd b x = setField
+                (name, f $ readerRead ty (getField name x) $ show b) x
         in (fixup, flagBool [] upd "")
     | otherwise =
-        let upd s x = fmap (\c -> setField (name,c) x) $ readerRead ty (getField name x) s
+        let upd s x = fmap (\c -> setField (name,c) x)
+                        $ readerRead ty (getField name x) s
         in (fixup, flagReq [] upd (readerHelp ty) "")
     where
         mty = reader x
         ty = fromJust mty
-        fixup = Fixup $ \x -> setField (name,readerFixup ty $ getField name x) x
+        fixup = Fixup $ \x ->
+            setField (name,readerFixup ty $ getField name x) x
 
 progAnn :: Extra -> Prog_ -> Prog_
 progAnn (ProgSummary a) x = x{progSummary=Just $ lines a}
@@ -157,12 +193,18 @@ progAnn (ProgProgram a) x = x{progProgram=a}
 progAnn ProgVerbosity x = x{progVerbosityArgs=let f sel = Just $ fromMaybe def $ sel $ progVerbosityArgs x in (f fst, f snd)}
 progAnn (Help a) x | length (progModes x) > 1 = x{progHelp=a}
 progAnn (ProgHelpArg a) x = x{progHelpArg = builtinAnns (progHelpArg x) a}
-progAnn (ProgVersionArg a) x = x{progVersionArg = builtinAnns (progVersionArg x) a}
-progAnn (ProgVerbosityArgs a b) x = x{progVerbosityArgs=(builtinAnns (Just $ fromMaybe def $ fst $ progVerbosityArgs x) a, builtinAnns (Just $ fromMaybe def $ snd $ progVerbosityArgs x) b)}
+progAnn (ProgVersionArg a) x =
+    x{progVersionArg = builtinAnns (progVersionArg x) a}
+progAnn (ProgVerbosityArgs a b) x =
+    x{progVerbosityArgs=
+        (builtinAnns (Just $ fromMaybe def $ fst $ progVerbosityArgs x) a
+        , builtinAnns (Just $ fromMaybe def $ snd $ progVerbosityArgs x) b)}
 progAnn ProgNoAtExpand x = x{progNoAtExpand=True}
-progAnn a x | length (progModes x) == 1 = x{progModes = map (modeAnn a) $ progModes x}
+progAnn a x | length (progModes x) == 1 =
+    x{progModes = map (modeAnn a) $ progModes x}
 progAnn a x = err "program" $ show a
 
+builtinAnns :: Maybe Builtin_ -> [Extra] -> Maybe Builtin_
 builtinAnns = foldl (flip builtinAnn)
 
 builtinAnn :: Extra -> Maybe Builtin_ -> Maybe Builtin_
@@ -191,9 +233,12 @@ flagAnn (Help a) x@Flag_{} = withFlagFlag x $ \x -> x{flagHelp=a}
 flagAnn (FlagArgPos a) x = toArg x $ Just a
 flagAnn FlagArgs x = toArg x Nothing
 flagAnn Explicit x@Flag_{} = x{flagExplicit=True}
-flagAnn (FlagOptional a) x@Flag_{flagEnum=Nothing,flagFlag=Flag{flagInfo=FlagReq}} = withFlagFlag x $ \x -> x{flagInfo=FlagOpt a}
+flagAnn (FlagOptional a)
+    x@Flag_{flagEnum=Nothing,flagFlag=Flag{flagInfo=FlagReq}} =
+        withFlagFlag x $ \x -> x{flagInfo=FlagOpt a}
 flagAnn (FlagOptional a) x@Arg_{} = x{flagArgOpt=Just a}
-flagAnn (Name a) x@Flag_{} = withFlagFlag x $ \x -> x{flagNames = a : flagNames x}
+flagAnn (Name a) x@Flag_{} =
+    withFlagFlag x $ \x -> x{flagNames = a : flagNames x}
 -- flagAnn (GroupName a) x@Flag_{} = x{flagGroup=Just a}
 flagAnn a x = errFlag (head $ words $ show x) $ show a
 

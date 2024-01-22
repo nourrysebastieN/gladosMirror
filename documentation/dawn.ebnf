@@ -10,7 +10,7 @@ integer = ( ('0x' | '0X'), hex, { hex } )
         | ( ('0b' | '0B'), binary, { binary } )
         | ( [ '-' ] | [ '+' ] ), ( '0' | digit, { digit0 }) ;
 
-boolean = 'true' | 'false' ;
+boolean = 'True' | 'False' ;
 
 alpha = ? alpha character ? ;
 
@@ -29,45 +29,68 @@ control = '\' ,
 
 character = "'" , ( ? all charater except \ or control character ? | control ) , "'" ;
 
-uppercase = "'" , ( ? all uppercase alpha ? ), "'" ;
+uppercase = ? all uppercase alpha ? ;
 
-lowercase = "'" , ( ? all lowercase alpha ? ), "'" ;
+lowercase = ? all lowercase alpha ? ;
 
 string = '"' , { character } , '"' ;
 
+struct literal = typename, { expression } ;
+
 literal = boolean | integer | character | string ;
 
-identifier = ( alpha | "_" ) , { alpha | digit0 | "_" } ;
+typename = uppercase, ( alpha | "_" ) , { alpha | digit0 | "_" }  ;
+
+name = lowercase , ( alpha | "_" ) , { alpha | digit0 | "_" }  ; 
+
+symbol = {
+        ( "!"
+        | '@'
+        | '#'
+        | '$'
+        | '%'
+        | '^'
+        | '&'
+        | '*'
+        | '-'
+        | '+'
+        | '='
+        | '|'
+        | '\\'
+        | ':'
+        | '<'
+        | '>'
+        | '/'
+        | '?'
+        | '~'
+        ) } ;
 
 expression = literal
-                | identifier
-                | '(', expression, ')' ;
+                | struct literal
+                | name
+                | symbol
+                | expression, symbol, expression
+                | name, { expression }
+                | '(', symbol, ')', { expression }
+                | '(', expression, ')';
+
+pattern = literal | name | '(', typename, { pattern }, ')' ;
 
 statement = if | case | expression ;
 
-block = { statement } ;
+if = 'if', expression, "then", statement, [ 'else', statement ] ;
 
-if = 'if', expression, "then", block, [ 'else', (if | block ) ] ;
+case = 'case' , expression , '{' , { '\t' , [ { pattern , '=', expression } ] , '\n' } , '}' ;
 
-case = 'case' , expression , '{' , { '\t' , [ { expression , "' '" } ] ,  return , '\n' } , '}' ;
-
-typename = uppercase, { identifier } ;
-
-argument = { lowercase } ;
-
-name = lowercase , { identifier } ; 
-
-struct = 'struct', typename, argument, '{', { '\t', typename, { argument }, '\n' }, '}' ;
+struct = 'struct', typename, name, '{', { '\t', typename, { name }, '\n' }, '}' ;
 
 parameters = typename , [ { ',', typename } ] ;
 
-return = ( '=' | 'return' ) , [ statement ] ;
+function prototype = name, '-', [ ( parameters ) , '@' ] , typename ; 
 
-function prototype = name, '::', [ ( parameters ) , '->' ] , typename ; 
+function definition = name, '{' , { '\t' , [ { pattern , '=', expression } ] , '\n' } , '}' ;
 
-function definition = name, '{' , { '\t' , [ { expression , "' '" } ] , return , '\n' } , '}' ;
-
-lamba function = '?' , ( parameters , '->' , return ) , '{' , { '\t' , [ { expression , "' '" } ] , return , '\n' } , '}' ;
+lamba function = '?' , ( name , [ { ',', name } ] ) , '{' , { '\t' , [ { pattern , '=', expression } ] , '\n' } , '}' ;
 
 interface = 'interface' , typename , parameters , [ 'extends' , typename , parameters ] , '{' , { '\t' , function prototype , '\n' } , '}' ;
 

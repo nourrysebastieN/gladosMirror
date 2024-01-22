@@ -1,3 +1,9 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
 
 module System.Console.Hawk.Explicit.Type where
 
@@ -104,13 +110,15 @@ checkMode x = msum
         checkGroup :: Group a -> Maybe String
         checkGroup x = msum
             [check "Empty group name" $ not $ any (null . fst) $ groupNamed x
-            ,check "Empty group contents" $ not $ any (null . snd) $ groupNamed x]
+            ,check "Empty group contents"
+            $ not $ any (null . snd) $ groupNamed x]
 
         checkNames :: String -> [Name] -> Maybe String
         checkNames msg xs = check "Empty names" (not (any null xs)) `mplus` do
             bad <- listToMaybe $ xs \\ nub xs
             let dupe = filter (== bad) xs
-            return $ "Sanity check failed, multiple " ++ msg ++ ": " ++ unwords (map show dupe)
+            return $ "Sanity check failed, multiple "
+                ++ msg ++ ": " ++ unwords (map show dupe)
 
         check :: String -> Bool -> Maybe String
         check msg True = Nothing
@@ -144,13 +152,23 @@ remapUpdate :: (a -> b) -> (b -> (a, a -> b)) -> Update a -> Update b
 remapUpdate f g upd = \s v -> let (a,b) = g v in fmap b $ upd s a
 
 modeEmpty :: a -> Mode a
-modeEmpty x = Mode mempty [] x Right (const Nothing) True "" [] ([],Nothing) mempty
+modeEmpty x =
+    Mode mempty [] x Right (const Nothing) True "" [] ([],Nothing) mempty
 
 mode :: Name -> a -> Help -> Arg a -> [Flag a] -> Mode a
-mode name value help arg flags = (modeEmpty value){modeNames=[name], modeHelp=help, modeArgs=([],Just arg), modeGroupFlags=toGroup flags}
+mode name value help arg flags =
+    (modeEmpty value){
+        modeNames=[name]
+        , modeHelp=help
+        , modeArgs=([],Just arg)
+        , modeGroupFlags=toGroup flags}
 
 modes :: String -> a -> Help -> [Mode a] -> Mode a
-modes name value help xs = (modeEmpty value){modeNames=[name], modeHelp=help, modeGroupModes=toGroup xs}
+modes name value help xs =
+    (modeEmpty value){
+        modeNames=[name]
+        , modeHelp=help
+        , modeGroupModes=toGroup xs}
 
 flagNone :: [Name] -> (a -> a) -> Help -> Flag a
 flagNone names f help = Flag names FlagNone upd "" help

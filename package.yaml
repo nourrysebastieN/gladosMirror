@@ -57,8 +57,6 @@ library:
 
   - System.Console.Hawk
 
-  - Instructions
-
   - Dawn
   - Dusk
   - Twillight
@@ -111,6 +109,16 @@ executables:
     main:               Main.hs
     source-dirs:
     - dawnc-app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dawn
+  prez-exe:
+    main:               Main.hs
+    source-dirs:
+    - prez
     ghc-options:
     - -threaded
     - -rtsopts

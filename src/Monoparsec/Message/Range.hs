@@ -1,3 +1,9 @@
+{-
+-- EPITECH PROJECT, 2023
+-- GLaDOS
+-- File description:
+-- Yay
+-}
 
 module Monoparsec.Message.Range(
     Range(..)
@@ -44,7 +50,8 @@ instance Hashable Range where
     hashWithSalt salt (All n) = hashWithSalt salt n
 
 merge :: Range -> Range -> Range
-merge (RangeSingle s e a) (RangeSingle s' e' a') = RangeSingle (min s s') (max e e') (min a a')
+merge (RangeSingle s e a) (RangeSingle s' e' a') =
+    RangeSingle (min s s') (max e e') (min a a')
 merge (Range s e) (Range s' e') = Range (min s s') (max e e')
 merge (Single n) (Single n') =
     if n > n'
