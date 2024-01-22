@@ -314,11 +314,13 @@ defaultState = LispState [
 
 test :: Expression -> LispState -> IO Bool
 test (ConstantExpression (Boolean b)) _ = pure b
-test (CallExpresssion e args) s = eval =<< (collect e s)
+test (CallExpresssion e@(Procedure _ _ _) args) s = eval =<< (collect e s)
     where
         eval (Procedure _ a body) = 
             (evaluateBody body =<< generateProcedureScope (zip a args) s)
             >>= (\ex -> Lisp.test ex s)
+test (CallExpresssion e args) s = eval =<< (collect e s)
+    where
         eval (Lambda a body) =
             (evaluateBody body =<< generateProcedureScope (zip a args) s)
             >>= (\ex -> Lisp.test ex s)
@@ -389,8 +391,7 @@ evaluateExpressionInBody (CallExpresssion e args) s@(LispState _) =
         eval (Procedure _ a body) = (evaluateBody body
                 =<< generateProcedureScope (zip a args) s) *> pure s
         eval (Builtin _ narg func) = guard (length args == narg)
-            *> ((\ex -> evaluateExpressionInBody ex s) =<< (func args s))
-            *> pure s
+            *> ((\ex -> evaluateExpressionInBody ex s)=<<(func args s))*>pure s
         eval (Lambda a body) = (evaluateBody body
                 =<< generateProcedureScope (zip a args) s) *> pure s
         eval ex = fail $ "attempt to apply non-procedure " <> show ex
@@ -407,16 +408,12 @@ evaluateExpression (VariableExpression n) s@(LispState defs) =
 evaluateExpression (CallExpresssion e args) s@(LispState _) =
     eval =<< (collect e s)
     where
-        eval (Procedure _ a body) =(
-                (evaluateBody body =<< generateProcedureScope (zip a args) s)
-                >>= print
-            ) *> pure s
+        eval (Procedure _ a body) =((evaluateBody body
+                =<< generateProcedureScope (zip a args) s) >>= print) *> pure s
         eval (Builtin _ narg func) = guard (length args == narg)
             *> ((\ex -> evaluateExpression ex s) =<< (func args s)) *> pure s
-        eval (Lambda a body) = (
-                (evaluateBody body =<< generateProcedureScope (zip a args) s)
-                >>= print
-            ) *> pure s
+        eval (Lambda a body) = ((evaluateBody body
+                =<< generateProcedureScope (zip a args) s) >>= print) *> pure s
         eval ex = fail $ "attempt to apply non-procedure " <> show ex
 evaluateExpression (If t c a) s =
     (condition =<< (sink =<< (collect t s))) *> pure s
