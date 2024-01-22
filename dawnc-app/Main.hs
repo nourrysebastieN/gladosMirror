@@ -50,7 +50,7 @@ compilerOption = build (Option {}) [sources :! def ! args ! typ "file"
         , output :! def ! explicit ! name "o" ! help "Output file"
         , test :! def ! explicit ! name "test" ! help "Test the code"
     ] ! program "dawnc"
-    ! summary "dawnc v0.4.0, (C) Agakistune, nourrysebastienN, Nathan-hoareau, Aitroxy"
+    ! summary "dawnc v0.4.0, (C) Agakistune, nourrysebastienN, Nathan-hoareau"
 
 putErrStr :: String -> IO ()
 putErrStr = hPutStr stderr
